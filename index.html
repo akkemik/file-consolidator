@@ -1131,7 +1131,8 @@ function renderFeedbackList() {
   if (!list.length) { container.innerHTML = ''; return; }
   container.innerHTML = list.map(f => {
     const stars = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
-    const date  = new Date(f.ts).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    const d = new Date(f.ts);
+    const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const who   = [f.firstName, f.lastName].filter(Boolean).join(' ') || '—';
     const flag  = f.country ? ` · ${f.country}` : '';
     const note  = f.comment ? `<div class="fb-comment">${esc(f.comment)}</div>` : '';
