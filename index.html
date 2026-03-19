@@ -113,8 +113,6 @@
     .card-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); margin-bottom: 14px; }
 
     /* ── SECURITY BADGE ── */
-    .security-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; color: var(--clr-success); background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 20px; padding: 3px 10px; margin-bottom: 12px; }
-    .security-badge svg { flex-shrink: 0; }
 
     /* ── DROPZONE ── */
     .dropzone { border: 2px dashed var(--clr-primary); border-radius: var(--radius); background: #eff6ff; text-align: center; padding: 36px 20px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
@@ -557,7 +555,6 @@ const i18n = {
     pdfStep3: 'Step 3 — Merge & Download',
     pdfDropzoneText: 'Drag & drop PDF or JPG/JPEG files here, or click to browse',
     pdfDropzoneHint: 'Supports .pdf, .jpg, .jpeg — drag to reorder after upload',
-    securityNote: 'All processing is local — no files leave your browser',
     localNotice: 'All files are processed entirely within your browser on your own device. No file is uploaded to any server, no data is stored externally, and nothing ever leaves your device.',
     noFiles: 'No files loaded yet.',
     dateColLabel: 'Date Column',
@@ -599,7 +596,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" is too large (max ${mb} MB). Skipped.`,
     errEncryptedPdf: (n) => `"${n}" is password-protected and cannot be merged. Skipped.`,
     downloading: 'File downloaded!',
-    csvPreparingDownload: 'Preparing download…',
   },
   tr: {
     langName: 'Türkçe',
@@ -621,7 +617,6 @@ const i18n = {
     pdfStep3: 'Adım 3 — Birleştir & İndir',
     pdfDropzoneText: 'PDF veya JPG/JPEG dosyalarını sürükleyin veya tıklayın',
     pdfDropzoneHint: '.pdf, .jpg, .jpeg desteklenir — yükledikten sonra sürükleyerek sıralayın',
-    securityNote: 'Tüm işlemler tarayıcınızda gerçekleşir — dosyalar hiçbir sunucuya gönderilmez',
     localNotice: 'Tüm dosyalar tamamen kendi cihazınızdaki tarayıcınızda işlenir. Hiçbir dosya herhangi bir sunucuya yüklenmez, hiçbir veri dışarıda saklanmaz ve hiçbir şey cihazınızdan çıkmaz.',
     noFiles: 'Henüz dosya yüklenmedi.',
     dateColLabel: 'Tarih Kolonu',
@@ -663,7 +658,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" çok büyük (maks. ${mb} MB). Atlandı.`,
     errEncryptedPdf: (n) => `"${n}" parola korumalı, birleştirilemez. Atlandı.`,
     downloading: 'Dosya indirildi!',
-    csvPreparingDownload: 'İndirme hazırlanıyor…',
   },
   de: {
     langName: 'Deutsch',
@@ -685,7 +679,6 @@ const i18n = {
     pdfStep3: 'Schritt 3 — Zusammenführen & Herunterladen',
     pdfDropzoneText: 'PDF- oder JPG/JPEG-Dateien hierher ziehen oder klicken',
     pdfDropzoneHint: 'Unterstützt .pdf, .jpg, .jpeg — nach dem Hochladen ziehen zum Sortieren',
-    securityNote: 'Alle Verarbeitungen erfolgen lokal — keine Dateien verlassen Ihren Browser',
     localNotice: 'Alle Dateien werden vollständig in Ihrem Browser auf Ihrem eigenen Gerät verarbeitet. Keine Datei wird auf einen Server hochgeladen, keine Daten werden extern gespeichert und nichts verlässt je Ihr Gerät.',
     noFiles: 'Noch keine Dateien geladen.',
     dateColLabel: 'Datumsspalte',
@@ -727,7 +720,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `„${n}" ist zu groß (max. ${mb} MB). Übersprungen.`,
     errEncryptedPdf: (n) => `„${n}" ist passwortgeschützt und kann nicht zusammengeführt werden. Übersprungen.`,
     downloading: 'Datei heruntergeladen!',
-    csvPreparingDownload: 'Download wird vorbereitet…',
   },
   sv: {
     langName: 'Svenska',
@@ -749,7 +741,6 @@ const i18n = {
     pdfStep3: 'Steg 3 — Slå ihop och ladda ner',
     pdfDropzoneText: 'Dra och släpp PDF- eller JPG/JPEG-filer här, eller klicka',
     pdfDropzoneHint: 'Stöder .pdf, .jpg, .jpeg — dra för att sortera efter uppladdning',
-    securityNote: 'All bearbetning sker lokalt — inga filer lämnar din webbläsare',
     localNotice: 'Alla filer bearbetas helt i din webbläsare på din egen enhet. Ingen fil laddas upp till någon server, inga data lagras externt och ingenting lämnar någonsin din enhet.',
     noFiles: 'Inga filer inlästa ännu.',
     dateColLabel: 'Datumkolumn',
@@ -791,7 +782,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" är för stor (max ${mb} MB). Hoppades över.`,
     errEncryptedPdf: (n) => `"${n}" är lösenordsskyddad och kan inte slås ihop. Hoppades över.`,
     downloading: 'Fil nedladdad!',
-    csvPreparingDownload: 'Förbereder nedladdning…',
   },
   es: {
     langName: 'Español',
@@ -813,7 +803,6 @@ const i18n = {
     pdfStep3: 'Paso 3 — Combinar y descargar',
     pdfDropzoneText: 'Arrastra y suelta archivos PDF o JPG/JPEG aquí, o haz clic',
     pdfDropzoneHint: 'Compatible con .pdf, .jpg, .jpeg — arrastra para reordenar tras subir',
-    securityNote: 'Todo el procesamiento es local — ningún archivo sale de tu navegador',
     localNotice: 'Todos los archivos se procesan completamente en tu navegador en tu propio dispositivo. Ningún archivo se sube a ningún servidor, ningún dato se almacena externamente y nada abandona jamás tu dispositivo.',
     noFiles: 'No hay archivos cargados aún.',
     dateColLabel: 'Columna de fecha',
@@ -855,7 +844,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" es demasiado grande (máx. ${mb} MB). Omitido.`,
     errEncryptedPdf: (n) => `"${n}" está protegido con contraseña y no se puede combinar. Omitido.`,
     downloading: '¡Archivo descargado!',
-    csvPreparingDownload: 'Preparando descarga…',
   },
   fr: {
     langName: 'Français',
@@ -877,7 +865,6 @@ const i18n = {
     pdfStep3: 'Étape 3 — Fusionner et télécharger',
     pdfDropzoneText: 'Glisser-déposer des fichiers PDF ou JPG/JPEG ici, ou cliquer',
     pdfDropzoneHint: 'Prend en charge .pdf, .jpg, .jpeg — glisser pour réorganiser après téléchargement',
-    securityNote: 'Tout le traitement est local — aucun fichier ne quitte votre navigateur',
     localNotice: "Tous les fichiers sont traités entièrement dans votre navigateur sur votre propre appareil. Aucun fichier n'est téléchargé sur un serveur, aucune donnée n'est stockée en externe et rien ne quitte jamais votre appareil.",
     noFiles: "Aucun fichier chargé pour l'instant.",
     dateColLabel: 'Colonne de date',
@@ -919,7 +906,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" est trop volumineux (max. ${mb} Mo). Ignoré.`,
     errEncryptedPdf: (n) => `"${n}" est protégé par mot de passe et ne peut pas être fusionné. Ignoré.`,
     downloading: 'Fichier téléchargé !',
-    csvPreparingDownload: 'Préparation du téléchargement…',
   },
   ru: {
     langName: 'Русский',
@@ -941,7 +927,6 @@ const i18n = {
     pdfStep3: 'Шаг 3 — Объединить и скачать',
     pdfDropzoneText: 'Перетащите PDF- или JPG/JPEG-файлы сюда или нажмите',
     pdfDropzoneHint: 'Поддерживаются .pdf, .jpg, .jpeg — перетащите для изменения порядка',
-    securityNote: 'Вся обработка выполняется локально — файлы не покидают браузер',
     localNotice: 'Все файлы обрабатываются полностью в вашем браузере на вашем устройстве. Никакие файлы не загружаются на сервер, данные не хранятся на сторонних ресурсах и ничто никогда не покидает ваше устройство.',
     noFiles: 'Файлы ещё не загружены.',
     dateColLabel: 'Столбец с датой',
@@ -983,7 +968,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `«${n}» слишком большой (макс. ${mb} МБ). Пропущен.`,
     errEncryptedPdf: (n) => `«${n}» защищён паролем и не может быть объединён. Пропущен.`,
     downloading: 'Файл скачан!',
-    csvPreparingDownload: 'Подготовка загрузки…',
   },
   nl: {
     langName: 'Nederlands',
@@ -1005,7 +989,6 @@ const i18n = {
     pdfStep3: 'Stap 3 — Samenvoegen en downloaden',
     pdfDropzoneText: 'PDF- of JPG/JPEG-bestanden hier slepen of klikken',
     pdfDropzoneHint: 'Ondersteunt .pdf, .jpg, .jpeg — slepen om te herordenen na uploaden',
-    securityNote: 'Alle verwerking is lokaal — geen bestanden verlaten uw browser',
     localNotice: 'Alle bestanden worden volledig verwerkt in uw browser op uw eigen apparaat. Geen enkel bestand wordt geüpload naar een server, geen gegevens worden extern opgeslagen en niets verlaat ooit uw apparaat.',
     noFiles: 'Nog geen bestanden geladen.',
     dateColLabel: 'Datumkolom',
@@ -1047,7 +1030,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" is te groot (max. ${mb} MB). Overgeslagen.`,
     errEncryptedPdf: (n) => `"${n}" is met wachtwoord beveiligd en kan niet worden samengevoegd. Overgeslagen.`,
     downloading: 'Bestand gedownload!',
-    csvPreparingDownload: 'Download voorbereiden…',
   },
   it: {
     langName: 'Italiano',
@@ -1069,7 +1051,6 @@ const i18n = {
     pdfStep3: 'Passo 3 — Unisci e scarica',
     pdfDropzoneText: 'Trascina file PDF o JPG/JPEG qui o clicca',
     pdfDropzoneHint: 'Supporta .pdf, .jpg, .jpeg — trascina per riordinare dopo il caricamento',
-    securityNote: "Tutta l'elaborazione è locale — nessun file lascia il browser",
     localNotice: "Tutti i file vengono elaborati interamente nel tuo browser sul tuo dispositivo. Nessun file viene caricato su un server, nessun dato viene archiviato esternamente e nulla lascia mai il tuo dispositivo.",
     noFiles: 'Nessun file caricato ancora.',
     dateColLabel: 'Colonna data',
@@ -1111,7 +1092,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" è troppo grande (max. ${mb} MB). Saltato.`,
     errEncryptedPdf: (n) => `"${n}" è protetto da password e non può essere unito. Saltato.`,
     downloading: 'File scaricato!',
-    csvPreparingDownload: 'Preparazione download…',
   },
   zh: {
     langName: '中文',
@@ -1133,7 +1113,6 @@ const i18n = {
     pdfStep3: '第3步 — 合并并下载',
     pdfDropzoneText: '将PDF或JPG/JPEG文件拖放至此处，或点击浏览',
     pdfDropzoneHint: '支持 .pdf、.jpg、.jpeg — 上传后可拖动排序',
-    securityNote: '所有处理均在本地进行 — 文件不会离开您的浏览器',
     localNotice: '所有文件完全在您自己设备的浏览器中处理。没有文件上传到任何服务器，没有数据存储在外部，任何内容都不会离开您的设备。',
     noFiles: '尚未加载任何文件。',
     dateColLabel: '日期列',
@@ -1175,7 +1154,6 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}"太大（最大 ${mb} MB）。已跳过。`,
     errEncryptedPdf: (n) => `"${n}"受密码保护，无法合并。已跳过。`,
     downloading: '文件已下载！',
-    csvPreparingDownload: '正在准备下载…',
   },
 };
 
