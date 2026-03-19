@@ -212,6 +212,11 @@
     #pdfDownloadSection { display: none; }
     #pdfDownloadSection.visible { display: block; }
 
+    /* ── SITE FOOTER ── */
+    .site-footer { margin-top: 28px; padding: 18px 0; border-top: 1px solid #d8e0ea; text-align: center; color: #5b6472; font-size: .98rem; }
+    .site-footer a { color: #0a58ca; text-decoration: none; }
+    .site-footer a:hover { text-decoration: underline; }
+
     /* ── RESPONSIVE ── */
 
     /* Tablet: sidebar drops below main */
@@ -258,6 +263,7 @@
       .ad-top-banner, .ad-bottom-banner { display: none; }
       /* Toast full-width at bottom */
       #toast { left: 12px; right: 12px; bottom: 16px; max-width: none; }
+      .site-footer { font-size: .95rem; line-height: 1.8; }
     }
   </style>
 </head>
@@ -467,6 +473,16 @@
   <div class="ad-slot ad-bottom-banner" id="adBottomBanner">
     <span>Advertisement · 728×90</span><!-- INSERT AD CODE HERE -->
   </div>
+</div>
+
+<div class="page-wrapper">
+  <footer class="site-footer">
+    <a href="./privacy-policy.html">Privacy Policy</a>
+    <span> | </span>
+    <a href="./cookie-policy.html">Cookie Policy</a>
+    <span> | </span>
+    <a href="./terms-of-use.html">Terms of Use</a>
+  </footer>
 </div>
 
 <div id="toast"></div>
