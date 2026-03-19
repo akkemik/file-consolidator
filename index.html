@@ -169,6 +169,10 @@
     .sidebar-tip ul li { margin-bottom: 4px; }
 
     /* ── FEEDBACK ── */
+    .feedback-name-row { display: flex; gap: 6px; margin-bottom: 6px; }
+    .feedback-name-row input, .feedback-country { width: 100%; border: 1px solid var(--clr-border); border-radius: 6px; padding: 6px 9px; font-size: 0.8rem; font-family: inherit; outline: none; background: #fff; transition: border-color 0.15s; }
+    .feedback-name-row input:focus, .feedback-country:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px #dbeafe; }
+    .feedback-country { margin-bottom: 6px; }
     .star-row { display: flex; gap: 4px; margin: 8px 0 10px; }
     .star-btn { background: none; border: none; cursor: pointer; padding: 2px; font-size: 1.6rem; line-height: 1; color: #d1d5db; transition: color 0.12s, transform 0.12s; }
     .star-btn:hover, .star-btn.active { color: #f59e0b; }
@@ -180,6 +184,13 @@
     .btn-feedback:disabled { opacity: 0.45; cursor: not-allowed; }
     .feedback-thanks { display: none; text-align: center; padding: 10px 0 4px; color: var(--clr-success); font-size: 0.85rem; font-weight: 600; }
     .feedback-summary { font-size: 0.76rem; color: var(--clr-muted); margin-top: 8px; text-align: center; }
+    .fb-list-wrap { margin-top: 10px; max-height: 260px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .fb-item { background: #f8fafc; border: 1px solid var(--clr-border); border-radius: 6px; padding: 8px 10px; font-size: 0.78rem; }
+    .fb-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .fb-stars { color: #f59e0b; letter-spacing: 1px; font-size: 0.85rem; }
+    .fb-date { color: #94a3b8; font-size: 0.72rem; }
+    .fb-who { color: var(--clr-muted); margin-bottom: 3px; font-weight: 600; }
+    .fb-comment { color: var(--clr-text); line-height: 1.45; }
 
     /* ── TOAST ── */
     #toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,0.22); opacity: 0; transform: translateY(12px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 999; max-width: 340px; }
@@ -384,11 +395,17 @@
         <div class="widget-title" data-i18n="feedbackTitle">Rate This App</div>
         <div id="feedbackForm">
           <div class="star-row" id="starRow" role="group" aria-label="Rating"></div>
+          <div class="feedback-name-row">
+            <input type="text" id="feedbackFirstName" autocomplete="given-name" maxlength="60" />
+            <input type="text" id="feedbackLastName"  autocomplete="family-name" maxlength="60" />
+          </div>
+          <select class="feedback-country" id="feedbackCountry"></select>
           <textarea class="feedback-comment" id="feedbackComment" rows="2"></textarea>
           <button class="btn-feedback" id="feedbackSubmit" disabled data-i18n="feedbackSubmit">Submit Feedback</button>
         </div>
         <div class="feedback-thanks" id="feedbackThanks" data-i18n="feedbackThanks">Thank you! ✓</div>
         <div class="feedback-summary" id="feedbackSummary"></div>
+        <div class="fb-list-wrap" id="feedbackList"></div>
       </div>
 
     </aside>
@@ -450,6 +467,9 @@ const i18n = {
     tipsPdf: '<ul><li>Drop PDF and/or JPG/JPEG files.</li><li>Drag items in the list to reorder pages.</li><li>Images become full-page in the output PDF.</li><li>All processing happens locally — your files never leave the browser.</li></ul>',
     tipsDefault: '<ul><li>Choose a mode above to get started.</li></ul>',
     feedbackTitle: 'Rate This App',
+    feedbackFirstNamePh: 'First name (optional)',
+    feedbackLastNamePh: 'Last name (optional)',
+    feedbackCountryPh: '— Country (optional) —',
     feedbackPlaceholder: 'Share your thoughts (optional)…',
     feedbackSubmit: 'Submit Feedback',
     feedbackThanks: 'Thank you for your feedback! ✓',
@@ -504,6 +524,9 @@ const i18n = {
     tipsPdf: '<ul><li>PDF ve/veya JPG/JPEG dosyaları yükleyin.</li><li>Listedeki öğeleri sürükleyerek sırayı değiştirin.</li><li>Görseller PDF\'te tam sayfa olarak yer alır.</li><li>Tüm işlemler tarayıcıda gerçekleşir — dosyalarınız hiçbir yere gönderilmez.</li></ul>',
     tipsDefault: '<ul><li>Başlamak için yukarıdan bir mod seçin.</li></ul>',
     feedbackTitle: 'Uygulamayı Puanlayın',
+    feedbackFirstNamePh: 'Ad (isteğe bağlı)',
+    feedbackLastNamePh: 'Soyad (isteğe bağlı)',
+    feedbackCountryPh: '— Ülke (isteğe bağlı) —',
     feedbackPlaceholder: 'Görüşlerinizi yazın (isteğe bağlı)…',
     feedbackSubmit: 'Gönder',
     feedbackThanks: 'Geri bildiriminiz için teşekkürler! ✓',
@@ -534,7 +557,10 @@ function applyLang() {
     const val = t(key);
     if (val !== undefined) el.textContent = val;
   });
-  document.getElementById('feedbackComment').placeholder = t('feedbackPlaceholder');
+  document.getElementById('feedbackComment').placeholder   = t('feedbackPlaceholder');
+  document.getElementById('feedbackFirstName').placeholder = t('feedbackFirstNamePh');
+  document.getElementById('feedbackLastName').placeholder  = t('feedbackLastNamePh');
+  buildCountryDropdown();
   updateSidebarTips();
   renderFeedbackSummary();
   renderCsvFileList();
@@ -1015,9 +1041,9 @@ const FEEDBACK_KEY = 'fileTools_feedbacks';
 let selectedStar = 0;
 
 function getFeedbacks() { try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY)) || []; } catch { return []; } }
-function saveFeedback(rating, comment) {
+function saveFeedback(rating, comment, firstName, lastName, country) {
   const list = getFeedbacks();
-  list.push({ rating, comment: comment.trim(), ts: Date.now() });
+  list.push({ rating, comment: comment.trim(), firstName: firstName.trim(), lastName: lastName.trim(), country, ts: Date.now() });
   localStorage.setItem(FEEDBACK_KEY, JSON.stringify(list));
 }
 
@@ -1037,23 +1063,26 @@ function buildStars() {
   }
 }
 function highlightStars(n) { document.querySelectorAll('#starRow .star-btn').forEach((b, idx) => b.classList.toggle('active', idx < n)); }
-function renderFeedbackSummary() {
-  const list = getFeedbacks(), el = document.getElementById('feedbackSummary');
-  if (!list.length) { el.textContent = ''; return; }
-  const avg = (list.reduce((s,f) => s + f.rating, 0) / list.length).toFixed(1);
-  el.textContent = t('feedbackSummary', avg, list.length);
-}
 
 document.getElementById('feedbackSubmit').addEventListener('click', () => {
   if (!selectedStar) return;
-  saveFeedback(selectedStar, document.getElementById('feedbackComment').value);
+  saveFeedback(
+    selectedStar,
+    document.getElementById('feedbackComment').value,
+    document.getElementById('feedbackFirstName').value,
+    document.getElementById('feedbackLastName').value,
+    document.getElementById('feedbackCountry').value
+  );
   document.getElementById('feedbackForm').style.display = 'none';
   const thanks = document.getElementById('feedbackThanks');
   thanks.style.display = 'block';
   renderFeedbackSummary();
   setTimeout(() => {
     selectedStar = 0;
-    document.getElementById('feedbackComment').value = '';
+    document.getElementById('feedbackComment').value   = '';
+    document.getElementById('feedbackFirstName').value = '';
+    document.getElementById('feedbackLastName').value  = '';
+    document.getElementById('feedbackCountry').value   = '';
     document.getElementById('feedbackSubmit').disabled = true;
     document.getElementById('feedbackForm').style.display = 'block';
     thanks.style.display = 'none';
@@ -1061,11 +1090,76 @@ document.getElementById('feedbackSubmit').addEventListener('click', () => {
   }, 4000);
 });
 
+// ── Country dropdown ─────────────────────────────────
+const COUNTRIES = [
+  'Afghanistan','Albania','Algeria','Argentina','Australia','Austria','Azerbaijan',
+  'Bangladesh','Belgium','Bolivia','Bosnia and Herzegovina','Brazil','Bulgaria',
+  'Cambodia','Canada','Chile','China','Colombia','Croatia','Czech Republic',
+  'Denmark','Ecuador','Egypt','Estonia','Ethiopia','Finland','France','Georgia',
+  'Germany','Ghana','Greece','Guatemala','Hungary','India','Indonesia','Iran',
+  'Iraq','Ireland','Israel','Italy','Japan','Jordan','Kazakhstan','Kenya',
+  'Kuwait','Latvia','Lebanon','Libya','Lithuania','Luxembourg','Malaysia',
+  'Mexico','Morocco','Netherlands','New Zealand','Nigeria','Norway','Pakistan',
+  'Palestine','Panama','Peru','Philippines','Poland','Portugal','Qatar',
+  'Romania','Russia','Saudi Arabia','Serbia','Singapore','Slovakia','Slovenia',
+  'South Africa','South Korea','Spain','Sri Lanka','Sweden','Switzerland',
+  'Syria','Taiwan','Thailand','Tunisia','Turkey','Ukraine','United Arab Emirates',
+  'United Kingdom','United States','Uruguay','Uzbekistan','Venezuela','Vietnam',
+  'Yemen','Zimbabwe'
+];
+
+function buildCountryDropdown() {
+  const sel = document.getElementById('feedbackCountry');
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${t('feedbackCountryPh')}</option>`;
+  COUNTRIES.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === cur) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+// ── Feedback List (last 5, sorted best→worst) ────────
+function renderFeedbackList() {
+  const container = document.getElementById('feedbackList');
+  if (!container) return;
+  const list = getFeedbacks()
+    .slice()
+    .sort((a, b) => b.rating - a.rating || b.ts - a.ts)
+    .slice(0, 5);
+  if (!list.length) { container.innerHTML = ''; return; }
+  container.innerHTML = list.map(f => {
+    const stars = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+    const date  = new Date(f.ts).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    const who   = [f.firstName, f.lastName].filter(Boolean).join(' ') || '—';
+    const flag  = f.country ? ` · ${f.country}` : '';
+    const note  = f.comment ? `<div class="fb-comment">${esc(f.comment)}</div>` : '';
+    return `<div class="fb-item">
+      <div class="fb-header">
+        <span class="fb-stars">${stars}</span>
+        <span class="fb-date">${date}</span>
+      </div>
+      <div class="fb-who">${esc(who)}${esc(flag)}</div>
+      ${note}
+    </div>`;
+  }).join('');
+}
+
+function renderFeedbackSummary() {
+  const list = getFeedbacks(), el = document.getElementById('feedbackSummary');
+  if (!list.length) { el.textContent = ''; return; }
+  const avg = (list.reduce((s,f) => s + f.rating, 0) / list.length).toFixed(1);
+  el.textContent = t('feedbackSummary', avg, list.length);
+  renderFeedbackList();
+}
+
 // ════════════════════════════════════════════════════════
 // INIT
 // ════════════════════════════════════════════════════════
 buildStars();
 applyLang();
+renderFeedbackList();
 </script>
 </body>
 </html>
