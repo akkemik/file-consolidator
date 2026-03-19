@@ -212,6 +212,10 @@
     #pdfDownloadSection { display: none; }
     #pdfDownloadSection.visible { display: block; }
 
+    /* ── LOCAL PROCESSING NOTICE ── */
+    .local-processing-notice { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; padding: 13px 16px; border: 1px solid #cfe0ff; border-left: 5px solid #0a58ca; background: #eef5ff; color: #16324f; border-radius: 10px; line-height: 1.55; font-size: 0.875rem; }
+    .local-processing-notice svg { flex-shrink: 0; margin-top: 1px; color: #0a58ca; }
+
     /* ── SITE FOOTER ── */
     .site-footer { margin-top: 28px; padding: 18px 0; border-top: 1px solid #d8e0ea; text-align: center; color: #5b6472; font-size: .98rem; }
     .site-footer a { color: #0a58ca; text-decoration: none; }
@@ -318,6 +322,10 @@
         <!-- Step 1 -->
         <div class="card">
           <div class="card-title" data-i18n="step1">Step 1 — Upload Files</div>
+          <div class="local-processing-notice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span data-i18n="localNotice">All files are processed entirely within your browser on your own device. No file is uploaded to any server, no data is stored externally, and nothing ever leaves your device.</span>
+          </div>
           <div class="dropzone" id="csvDropzone">
             <input type="file" class="file-input-hidden" id="csvFileInput" multiple accept=".csv,.xlsx,.xls" />
             <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
@@ -388,9 +396,9 @@
         <!-- Step 1 -->
         <div class="card">
           <div class="card-title" data-i18n="pdfStep1">Step 1 — Upload Files</div>
-          <div class="security-badge">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <span data-i18n="securityNote">All processing is local — no files leave your browser</span>
+          <div class="local-processing-notice">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span data-i18n="localNotice">All files are processed entirely within your browser on your own device. No file is uploaded to any server, no data is stored externally, and nothing ever leaves your device.</span>
           </div>
           <div class="dropzone pdf-zone" id="pdfDropzone">
             <input type="file" class="file-input-hidden" id="pdfFileInput" multiple accept=".pdf,.jpg,.jpeg" />
@@ -514,6 +522,7 @@ const i18n = {
     pdfDropzoneText: 'Drag & drop PDF or JPG/JPEG files here, or click to browse',
     pdfDropzoneHint: 'Supports .pdf, .jpg, .jpeg — drag to reorder after upload',
     securityNote: 'All processing is local — no files leave your browser',
+    localNotice: 'All files are processed entirely within your browser on your own device. No file is uploaded to any server, no data is stored externally, and nothing ever leaves your device.',
     noFiles: 'No files loaded yet.',
     dateColLabel: 'Date Column',
     dateColPlaceholder: '— select date column —',
@@ -577,6 +586,7 @@ const i18n = {
     pdfDropzoneText: 'PDF veya JPG/JPEG dosyalarını sürükleyin veya tıklayın',
     pdfDropzoneHint: '.pdf, .jpg, .jpeg desteklenir — yükledikten sonra sürükleyerek sıralayın',
     securityNote: 'Tüm işlemler tarayıcınızda gerçekleşir — dosyalar hiçbir sunucuya gönderilmez',
+    localNotice: 'Tüm dosyalar tamamen kendi cihazınızdaki tarayıcınızda işlenir. Hiçbir dosya herhangi bir sunucuya yüklenmez, hiçbir veri dışarıda saklanmaz ve hiçbir şey cihazınızdan çıkmaz.',
     noFiles: 'Henüz dosya yüklenmedi.',
     dateColLabel: 'Tarih Kolonu',
     dateColPlaceholder: '— tarih kolonu seçin —',
