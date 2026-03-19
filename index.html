@@ -198,6 +198,13 @@
     #toast.error { background: #7f1d1d; }
     #toast.success { background: #14532d; }
 
+    /* ── CSV PROGRESS LOG ── */
+    .csv-log { margin-top: 14px; display: flex; flex-direction: column; gap: 5px; }
+    .csv-log-entry { display: flex; align-items: flex-start; gap: 8px; font-size: 0.82rem; padding: 7px 10px; border-radius: 6px; background: #f8fafc; border: 1px solid var(--clr-border); }
+    .csv-log-entry.log-ok   { border-color: #bbf7d0; background: #f0fdf4; }
+    .csv-log-entry.log-done { border-color: #bfdbfe; background: #eff6ff; font-weight: 600; }
+    .csv-log-entry.log-feedback { border-color: #fde68a; background: #fffbeb; font-weight: 600; color: #92400e; }
+    .csv-log-icon { flex-shrink: 0; margin-top: 1px; }
     #csvEmptyState { text-align:center; padding:16px 0 4px; color:var(--clr-muted); font-size:0.88rem; }
     #pdfEmptyState { text-align:center; padding:16px 0 4px; color:var(--clr-muted); font-size:0.88rem; }
     #csvDownloadSection { display: none; }
@@ -282,6 +289,12 @@
           <div class="card-title" data-i18n="step2">Step 2 — Loaded Files</div>
           <div id="csvEmptyState" data-i18n="noFiles">No files loaded yet.</div>
           <div id="csvFileList"></div>
+        </div>
+
+        <!-- Progress Log -->
+        <div class="card" id="csvLogCard" style="display:none;">
+          <div class="card-title" data-i18n="csvLogTitle">Process Log</div>
+          <div class="csv-log" id="csvLog"></div>
         </div>
 
         <!-- In-content ad -->
@@ -474,6 +487,11 @@ const i18n = {
     feedbackSubmit: 'Submit Feedback',
     feedbackThanks: 'Thank you for your feedback! ✓',
     feedbackSummary: (avg, n) => `Average: ${avg} ★ from ${n} rating${n !== 1 ? 's' : ''}`,
+    csvLogTitle: 'Process Log',
+    csvLogFile: (n, rows, cols) => `✓  File loaded: ${n} — ${rows} rows, ${cols} columns`,
+    csvLogMerging: 'Merging files…',
+    csvLogDone: (r, c) => `✓  Process completed — ${r} rows × ${c} columns merged successfully.`,
+    csvLogFeedback: '⭐  Enjoying the app? Please leave your feedback below!',
     csvMergeSuccess: (r, c) => `Merged: ${r} rows × ${c} columns`,
     pdfMerging: (i, n) => `Processing file ${i} of ${n}…`,
     pdfDone: (n) => `Done! ${n} file${n !== 1 ? 's' : ''} merged into one PDF.`,
@@ -531,6 +549,11 @@ const i18n = {
     feedbackSubmit: 'Gönder',
     feedbackThanks: 'Geri bildiriminiz için teşekkürler! ✓',
     feedbackSummary: (avg, n) => `Ortalama: ${avg} ★ — ${n} değerlendirme`,
+    csvLogTitle: 'İşlem Günlüğü',
+    csvLogFile: (n, rows, cols) => `✓  Dosya yüklendi: ${n} — ${rows} satır, ${cols} kolon`,
+    csvLogMerging: 'Dosyalar birleştiriliyor…',
+    csvLogDone: (r, c) => `✓  İşlem tamamlandı — ${r} satır × ${c} kolon başarıyla birleştirildi.`,
+    csvLogFeedback: '⭐  Uygulamayı beğendiniz mi? Lütfen aşağıdan geri bildirim bırakın!',
     csvMergeSuccess: (r, c) => `Birleştirildi: ${r} satır × ${c} kolon`,
     pdfMerging: (i, n) => `Dosya işleniyor: ${i} / ${n}…`,
     pdfDone: (n) => `Tamamlandı! ${n} dosya tek PDF olarak birleştirildi.`,
@@ -563,6 +586,7 @@ function applyLang() {
   buildCountryDropdown();
   updateSidebarTips();
   renderFeedbackSummary();
+  rebuildCsvLog();
   renderCsvFileList();
   updateDateColSelect();
   renderPdfFileList();
@@ -691,6 +715,7 @@ function readCsvFile(f) {
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
       const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
       csvFiles.push({ name: f.name, rows, columns });
+      appendCsvLog(t('csvLogFile', f.name, rows.length, columns.length), 'log-ok');
       onCsvFilesChanged();
     } catch { showToast(t('errBadFile', f.name), 'error'); }
   };
@@ -703,7 +728,30 @@ function removeCsvFile(name) {
   csvMergedWorkbook = null;
   csvDownloadSection.classList.remove('visible');
   csvDownloadSection.style.display = 'none';
+  // Rebuild log from remaining files
+  rebuildCsvLog();
   onCsvFilesChanged();
+}
+
+// ── CSV Log helpers ──────────────────────────────────
+const csvLogCard = document.getElementById('csvLogCard');
+const csvLogEl   = document.getElementById('csvLog');
+
+function appendCsvLog(text, type = '') {
+  const entry = document.createElement('div');
+  entry.className = 'csv-log-entry' + (type ? ' ' + type : '');
+  entry.innerHTML = `<span class="csv-log-icon"></span><span>${esc(text)}</span>`;
+  csvLogEl.appendChild(entry);
+  csvLogEl.scrollTop = csvLogEl.scrollHeight;
+  csvLogCard.style.display = 'block';
+}
+
+function rebuildCsvLog() {
+  csvLogEl.innerHTML = '';
+  if (!csvFiles.length) { csvLogCard.style.display = 'none'; return; }
+  csvFiles.forEach(f => {
+    appendCsvLog(t('csvLogFile', f.name, f.rows.length, f.columns.length), 'log-ok');
+  });
 }
 
 function onCsvFilesChanged() {
@@ -781,9 +829,24 @@ function updateCsvMergeBtn() { csvMergeBtn.disabled = csvFiles.length === 0 || !
 csvMergeBtn.addEventListener('click', () => {
   if (!csvFiles.length) { showToast(t('errNoFiles'), 'error'); return; }
   if (!dateColSelect.value) { showToast(t('errNoDateCol'), 'error'); return; }
-  const dateCol = dateColSelect.value, sourceCol = t('sourceCol');
-  const otherCols = getAllCsvCols().filter(c => c !== dateCol && c !== sourceCol);
-  const finalCols = [dateCol, ...otherCols, sourceCol];
+
+  appendCsvLog(t('csvLogMerging'));
+
+  const dateCol   = dateColSelect.value;
+  const sourceCol = t('sourceCol');
+
+  // Column order: first file's columns in original order, then new cols from other files at the end
+  const firstFileCols = csvFiles[0].columns.filter(c => c !== dateCol && c !== sourceCol);
+  const firstFileColSet = new Set(csvFiles[0].columns);
+  const extraCols = [];
+  for (let i = 1; i < csvFiles.length; i++) {
+    csvFiles[i].columns.forEach(c => {
+      if (!firstFileColSet.has(c) && c !== dateCol && c !== sourceCol && !extraCols.includes(c)) {
+        extraCols.push(c);
+      }
+    });
+  }
+  const finalCols = [dateCol, ...firstFileCols, ...extraCols, sourceCol];
   let allRows = [];
   csvFiles.forEach(f => f.rows.forEach(row => {
     const r = {};
@@ -803,6 +866,8 @@ csvMergeBtn.addEventListener('click', () => {
   csvDownloadSection.style.display = 'block';
   csvDownloadSection.classList.add('visible');
   updateCsvMergeInfo();
+  appendCsvLog(t('csvLogDone', csvMergedRows, csvMergedCols), 'log-done');
+  appendCsvLog(t('csvLogFeedback'), 'log-feedback');
   showToast(t('csvMergeSuccess', csvMergedRows, csvMergedCols), 'success');
 });
 
