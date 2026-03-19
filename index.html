@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Consolidator</title>
+  <!-- SheetJS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- FileSaver -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --clr-bg: #f0f2f5;
+      --clr-surface: #ffffff;
+      --clr-border: #d0d7de;
+      --clr-primary: #2563eb;
+      --clr-primary-hover: #1d4ed8;
+      --clr-danger: #dc2626;
+      --clr-success: #16a34a;
+      --clr-text: #1e293b;
+      --clr-muted: #64748b;
+      --clr-header-bg: #1e40af;
+      --radius: 8px;
+      --shadow: 0 1px 4px rgba(0,0,0,0.10);
+      --sidebar-w: 320px;
+      --gap: 20px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--clr-bg);
+      color: var(--clr-text);
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--clr-header-bg);
+      color: #fff;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    header .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    header .brand svg { width: 26px; height: 26px; }
+    #langSelect {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+    }
+    #langSelect option { background: #1e40af; color: #fff; }
+
+    /* ── AD SLOTS ── */
+    .ad-slot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: var(--radius);
+      color: #94a3b8;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      overflow: hidden;
+      /* Replace inner content with your ad code */
+    }
+    .ad-slot .ad-label {
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* Top banner 728×90 */
+    .ad-top-banner {
+      max-width: 728px;
+      height: 90px;
+      margin: 14px auto 0;
+    }
+
+    /* Bottom banner 728×90 */
+    .ad-bottom-banner {
+      max-width: 728px;
+      height: 90px;
+      margin: 0 auto 24px;
+    }
+
+    /* Sidebar 300×250 */
+    .ad-sidebar-rect {
+      width: 300px;
+      height: 250px;
+      flex-shrink: 0;
+    }
+
+    /* In-content 468×60 */
+    .ad-in-content {
+      width: 100%;
+      max-width: 468px;
+      height: 60px;
+      margin: 0 auto;
+    }
+
+    /* ── PAGE WRAPPER ── */
+    .page-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ── CONTENT + SIDEBAR LAYOUT ── */
+    .content-layout {
+      display: flex;
+      gap: var(--gap);
+      align-items: flex-start;
+      padding: 20px 0 40px;
+    }
+    .content-main { flex: 1; min-width: 0; }
+    .content-sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: sticky;
+      top: 72px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      margin-bottom: var(--gap);
+    }
+    .card-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--clr-muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── DROPZONE ── */
+    #dropzone {
+      border: 2px dashed var(--clr-primary);
+      border-radius: var(--radius);
+      background: #eff6ff;
+      text-align: center;
+      padding: 40px 20px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    #dropzone.drag-over { background: #dbeafe; border-color: #1d4ed8; }
+    #dropzone svg { color: var(--clr-primary); margin-bottom: 10px; }
+    #dropzone p { color: var(--clr-muted); font-size: 0.95rem; }
+    #dropzone .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 6px; }
+    #fileInput { display: none; }
+
+    /* ── FILE CARDS ── */
+    #fileList { display: flex; flex-direction: column; gap: 12px; }
+    .file-card { border: 1px solid var(--clr-border); border-radius: var(--radius); overflow: hidden; }
+    .file-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f8fafc;
+      gap: 10px;
+    }
+    .file-card-header .file-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .file-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 0.78rem; color: var(--clr-muted); white-space: nowrap; }
+    .file-card-actions { display: flex; align-items: center; gap: 6px; }
+    .btn-icon {
+      background: none; border: none; cursor: pointer;
+      padding: 4px 6px; border-radius: 5px;
+      display: flex; align-items: center;
+      color: var(--clr-muted);
+      transition: background 0.1s, color 0.1s;
+    }
+    .btn-icon:hover { background: #f1f5f9; }
+    .btn-icon.danger:hover { color: var(--clr-danger); background: #fee2e2; }
+    .btn-toggle-preview { font-size: 0.78rem; color: var(--clr-primary); }
+
+    /* ── PREVIEW TABLE ── */
+    .preview-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--clr-border);
+      max-height: 0;
+      overflow-y: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .preview-wrap.open { max-height: 260px; overflow-y: auto; }
+    .preview-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    .preview-table th {
+      background: #f1f5f9; padding: 6px 10px;
+      text-align: left; border-bottom: 1px solid var(--clr-border);
+      white-space: nowrap; position: sticky; top: 0;
+    }
+    .preview-table td {
+      padding: 5px 10px; border-bottom: 1px solid #f1f5f9;
+      white-space: nowrap; max-width: 180px;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .preview-table tr:last-child td { border-bottom: none; }
+
+    /* ── FORM ── */
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--clr-text); }
+    .form-group select, .form-group input[type=text] {
+      border: 1px solid var(--clr-border);
+      border-radius: 6px; padding: 8px 12px;
+      font-size: 0.9rem; outline: none;
+      width: 100%; max-width: 360px;
+      background: #fff; transition: border-color 0.15s;
+    }
+    .form-group select:focus, .form-group input[type=text]:focus {
+      border-color: var(--clr-primary);
+      box-shadow: 0 0 0 3px #dbeafe;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 20px; border-radius: 7px;
+      border: none; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: background 0.15s, opacity 0.15s;
+    }
+    .btn-primary { background: var(--clr-primary); color: #fff; }
+    .btn-primary:hover { background: var(--clr-primary-hover); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-success { background: var(--clr-success); color: #fff; }
+    .btn-success:hover { background: #15803d; }
+    .btn-success:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .action-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .download-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+    .download-row .form-group { flex: 1; min-width: 200px; }
+    .ext-label { padding: 9px 10px; font-size: 0.9rem; color: var(--clr-muted); font-weight: 600; white-space: nowrap; }
+
+    /* ── SIDEBAR WIDGET ── */
+    .sidebar-widget {
+      background: var(--clr-surface);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+    .sidebar-widget .widget-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--clr-muted);
+      margin-bottom: 10px;
+    }
+    .sidebar-tip {
+      font-size: 0.82rem;
+      color: var(--clr-text);
+      line-height: 1.55;
+    }
+    .sidebar-tip ul { padding-left: 16px; }
+    .sidebar-tip ul li { margin-bottom: 4px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: #1e293b; color: #fff;
+      padding: 12px 20px; border-radius: 8px;
+      font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+      opacity: 0; transform: translateY(12px);
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none; z-index: 999; max-width: 340px;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.error { background: #7f1d1d; }
+    #toast.success { background: #14532d; }
+
+    #emptyState { text-align:center; padding:20px 0 8px; color:var(--clr-muted); font-size:0.88rem; }
+    #downloadSection { display: none; }
+    #downloadSection.visible { display: block; }
+
+    /* ── RESPONSIVE ── */
+    /* ── FEEDBACK WIDGET ── */
+    .feedback-widget {}
+    .star-row {
+      display: flex;
+      gap: 4px;
+      margin: 8px 0 10px;
+    }
+    .star-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      font-size: 1.6rem;
+      line-height: 1;
+      color: #d1d5db;
+      transition: color 0.12s, transform 0.12s;
+    }
+    .star-btn:hover, .star-btn.active { color: #f59e0b; }
+    .star-btn:hover { transform: scale(1.15); }
+    .feedback-comment {
+      width: 100%;
+      border: 1px solid var(--clr-border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 56px;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 8px;
+    }
+    .feedback-comment:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px #dbeafe; }
+    .btn-feedback {
+      width: 100%;
+      background: var(--clr-primary);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 0;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-feedback:hover { background: var(--clr-primary-hover); }
+    .btn-feedback:disabled { opacity: 0.45; cursor: not-allowed; }
+    .feedback-thanks {
+      display: none;
+      text-align: center;
+      padding: 10px 0 4px;
+      color: var(--clr-success);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .feedback-summary {
+      font-size: 0.76rem;
+      color: var(--clr-muted);
+      margin-top: 8px;
+      text-align: center;
+    }
+    .stars-display { color: #f59e0b; letter-spacing: 1px; }
+
+    @media (max-width: 860px) {
+      .content-layout { flex-direction: column; }
+      .content-sidebar { position: static; width: 100%; flex-direction: row; flex-wrap: wrap; }
+      .ad-sidebar-rect { width: 100%; height: 100px; }
+    }
+    @media (max-width: 560px) {
+      .ad-top-banner, .ad-bottom-banner { height: 60px; }
+      .ext-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════════════ -->
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+      <polyline points="10 9 9 9 8 9"/>
+    </svg>
+    <span data-i18n="appTitle">File Consolidator</span>
+  </div>
+  <select id="langSelect" title="Language"></select>
+</header>
+
+<!-- ═══════════════════════════════════════════════════
+     TOP BANNER AD  (728×90)
+     ↓↓ Replace the inner div with your ad code ↓↓
+════════════════════════════════════════════════════ -->
+<div class="page-wrapper">
+  <div class="ad-slot ad-top-banner" id="adTopBanner">
+    <span class="ad-label">Advertisement · 728×90</span>
+    <!-- INSERT AD CODE HERE -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT + RIGHT SIDEBAR
+════════════════════════════════════════════════════ -->
+<div class="page-wrapper">
+  <div class="content-layout">
+
+    <!-- ── LEFT: MAIN APP CONTENT ── -->
+    <div class="content-main">
+
+      <!-- STEP 1: Upload -->
+      <div class="card">
+        <div class="card-title" data-i18n="step1">Step 1 — Upload Files</div>
+        <div id="dropzone">
+          <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls" />
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 16 12 12 8 16"/>
+            <line x1="12" y1="12" x2="12" y2="21"/>
+            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+          </svg>
+          <p data-i18n="dropzoneText">Drag &amp; drop files here, or click to browse</p>
+          <p class="hint" data-i18n="dropzoneHint">Supports .csv, .xlsx, .xls — multiple files allowed</p>
+        </div>
+      </div>
+
+      <!-- STEP 2: File List -->
+      <div class="card" id="fileListCard" style="display:none;">
+        <div class="card-title" data-i18n="step2">Step 2 — Loaded Files</div>
+        <div id="emptyState" data-i18n="noFiles">No files loaded yet.</div>
+        <div id="fileList"></div>
+      </div>
+
+      <!-- ═══ IN-CONTENT AD (468×60) ═══════════════════
+           Shown between step 2 and step 3.
+           ↓↓ Replace the inner span with your ad code ↓↓ -->
+      <div class="ad-slot ad-in-content" id="adInContent" style="display:none;">
+        <span class="ad-label">Advertisement · 468×60</span>
+        <!-- INSERT AD CODE HERE -->
+      </div>
+
+      <!-- STEP 3: Settings + Merge -->
+      <div class="card" id="settingsCard" style="display:none;">
+        <div class="card-title" data-i18n="step3">Step 3 — Configure &amp; Merge</div>
+        <div class="form-group" style="margin-bottom:18px; max-width:360px;">
+          <label data-i18n="dateColLabel">Date Column</label>
+          <select id="dateColSelect">
+            <option value="" data-i18n="dateColPlaceholder">— select date column —</option>
+          </select>
+        </div>
+        <div class="action-bar">
+          <button class="btn btn-primary" id="mergeBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+            </svg>
+            <span data-i18n="mergeBtn">Merge Files</span>
+          </button>
+          <span id="mergeStatus" style="font-size:0.85rem; color:var(--clr-muted);"></span>
+        </div>
+      </div>
+
+      <!-- STEP 4: Download -->
+      <div class="card" id="downloadSection">
+        <div class="card-title" data-i18n="step4">Step 4 — Download</div>
+        <div class="download-row">
+          <div class="form-group">
+            <label data-i18n="filenameLabel">Output File Name</label>
+            <input type="text" id="filenameInput" value="consolidated" />
+          </div>
+          <span class="ext-label">.xlsx</span>
+          <button class="btn btn-success" id="downloadBtn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span data-i18n="downloadBtn">Download .xlsx</span>
+          </button>
+        </div>
+        <p id="mergeInfo" style="margin-top:12px; font-size:0.82rem; color:var(--clr-muted);"></p>
+      </div>
+
+    </div><!-- /.content-main -->
+
+    <!-- ── RIGHT: SIDEBAR ── -->
+    <aside class="content-sidebar">
+
+      <!-- ═══ SIDEBAR AD (300×250) ════════════════════
+           ↓↓ Replace the inner span with your ad code ↓↓ -->
+      <div class="ad-slot ad-sidebar-rect" id="adSidebar">
+        <span class="ad-label">Advertisement · 300×250</span>
+        <!-- INSERT AD CODE HERE -->
+      </div>
+
+      <!-- Tips widget -->
+      <div class="sidebar-widget">
+        <div class="widget-title" data-i18n="tipsTitle">Tips</div>
+        <div class="sidebar-tip" data-i18n="tipsBody">
+          <!-- Dynamic content via JS -->
+        </div>
+      </div>
+
+      <!-- ═══ FEEDBACK WIDGET ═══════════════════════ -->
+      <div class="sidebar-widget feedback-widget" id="feedbackWidget">
+        <div class="widget-title" data-i18n="feedbackTitle">Rate This App</div>
+
+        <div id="feedbackForm">
+          <div class="star-row" id="starRow" role="group" aria-label="Rating"></div>
+          <textarea
+            class="feedback-comment"
+            id="feedbackComment"
+            rows="2"
+            data-i18n-placeholder="feedbackPlaceholder"
+          ></textarea>
+          <button class="btn-feedback" id="feedbackSubmit" disabled data-i18n="feedbackSubmit">Submit Feedback</button>
+        </div>
+
+        <div class="feedback-thanks" id="feedbackThanks" data-i18n="feedbackThanks">
+          Thank you for your feedback! ✓
+        </div>
+        <div class="feedback-summary" id="feedbackSummary"></div>
+      </div>
+
+    </aside>
+
+  </div><!-- /.content-layout -->
+</div><!-- /.page-wrapper -->
+
+<!-- ═══════════════════════════════════════════════════
+     BOTTOM BANNER AD  (728×90)
+     ↓↓ Replace the inner span with your ad code ↓↓
+════════════════════════════════════════════════════ -->
+<div class="page-wrapper">
+  <div class="ad-slot ad-bottom-banner" id="adBottomBanner">
+    <span class="ad-label">Advertisement · 728×90</span>
+    <!-- INSERT AD CODE HERE -->
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════ -->
+<script>
+// ─── i18n ────────────────────────────────────────────────────────────────────
+const i18n = {
+  en: {
+    langName: 'English',
+    appTitle: 'File Consolidator',
+    step1: 'Step 1 — Upload Files',
+    step2: 'Step 2 — Loaded Files',
+    step3: 'Step 3 — Configure & Merge',
+    step4: 'Step 4 — Download',
+    dropzoneText: 'Drag & drop files here, or click to browse',
+    dropzoneHint: 'Supports .csv, .xlsx, .xls — multiple files allowed',
+    noFiles: 'No files loaded yet.',
+    dateColLabel: 'Date Column',
+    dateColPlaceholder: '— select date column —',
+    mergeBtn: 'Merge Files',
+    filenameLabel: 'Output File Name',
+    downloadBtn: 'Download .xlsx',
+    previewShow: 'Show preview',
+    previewHide: 'Hide preview',
+    rows: 'rows',
+    cols: 'cols',
+    sourceCol: 'Source File',
+    tipsTitle: 'Tips',
+    tipsBody: '<ul><li>You can drop multiple files at once.</li><li>Files with different columns will be merged — missing values left empty.</li><li>Pick the column that contains dates for correct ordering.</li><li>A "Source File" column is added automatically.</li></ul>',
+    feedbackTitle: 'Rate This App',
+    feedbackPlaceholder: 'Share your thoughts (optional)…',
+    feedbackSubmit: 'Submit Feedback',
+    feedbackThanks: 'Thank you for your feedback! ✓',
+    feedbackSummary: (avg, count) => `Average: ${avg} ★ from ${count} rating${count !== 1 ? 's' : ''}`,
+    mergeSuccess: (r, c) => `Merged: ${r} rows × ${c} columns`,
+    errNoFiles: 'Please upload at least one file.',
+    errNoDateCol: 'Please select a date column.',
+    errBadFile: (n) => `Could not read "${n}". File skipped.`,
+    downloading: 'File downloaded!',
+  },
+  tr: {
+    langName: 'Türkçe',
+    appTitle: 'Dosya Birleştirici',
+    step1: 'Adım 1 — Dosya Yükle',
+    step2: 'Adım 2 — Yüklenen Dosyalar',
+    step3: 'Adım 3 — Yapılandır & Birleştir',
+    step4: 'Adım 4 — İndir',
+    dropzoneText: 'Dosyaları buraya sürükleyin veya tıklayıp seçin',
+    dropzoneHint: '.csv, .xlsx, .xls desteklenir — çoklu seçim mümkün',
+    noFiles: 'Henüz dosya yüklenmedi.',
+    dateColLabel: 'Tarih Kolonu',
+    dateColPlaceholder: '— tarih kolonu seçin —',
+    mergeBtn: 'Birleştir',
+    filenameLabel: 'Çıktı Dosya Adı',
+    downloadBtn: '.xlsx İndir',
+    previewShow: 'Önizleme göster',
+    previewHide: 'Önizleme gizle',
+    rows: 'satır',
+    cols: 'kolon',
+    sourceCol: 'Kaynak Dosya',
+    tipsTitle: 'İpuçları',
+    tipsBody: '<ul><li>Aynı anda birden fazla dosya bırakabilirsiniz.</li><li>Farklı kolonlara sahip dosyalar birleştirilir; eksik değerler boş bırakılır.</li><li>Doğru sıralama için tarih bilgisi içeren kolonu seçin.</li><li>"Kaynak Dosya" kolonu otomatik eklenir.</li></ul>',
+    feedbackTitle: 'Uygulamayı Puanlayın',
+    feedbackPlaceholder: 'Görüşlerinizi yazın (isteğe bağlı)…',
+    feedbackSubmit: 'Gönder',
+    feedbackThanks: 'Geri bildiriminiz için teşekkürler! ✓',
+    feedbackSummary: (avg, count) => `Ortalama: ${avg} ★ — ${count} değerlendirme`,
+    mergeSuccess: (r, c) => `Birleştirildi: ${r} satır × ${c} kolon`,
+    errNoFiles: 'Lütfen en az bir dosya yükleyin.',
+    errNoDateCol: 'Lütfen bir tarih kolonu seçin.',
+    errBadFile: (n) => `"${n}" okunamadı. Dosya atlandı.`,
+    downloading: 'Dosya indirildi!',
+  }
+};
+
+let lang = 'en';
+
+function t(key, ...args) {
+  const val = i18n[lang][key];
+  if (typeof val === 'function') return val(...args);
+  return val ?? key;
+}
+
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val !== undefined) {
+      // Allow HTML in tipsBody
+      if (key === 'tipsBody') { el.innerHTML = val; }
+      else { el.textContent = val; }
+    }
+  });
+  renderFileList();
+  updateDateColSelect();
+  updateMergeInfo();
+}
+
+// Build lang selector
+const langSelect = document.getElementById('langSelect');
+Object.entries(i18n).forEach(([code, data]) => {
+  const opt = document.createElement('option');
+  opt.value = code;
+  opt.textContent = data.langName;
+  langSelect.appendChild(opt);
+});
+langSelect.addEventListener('change', () => { lang = langSelect.value; applyLang(); applyFeedbackLang(); });
+
+// ─── State ───────────────────────────────────────────────────────────────────
+const files = [];
+let mergedWorkbook = null;
+let mergedRowCount = 0;
+let mergedColCount = 0;
+
+// ─── DOM refs ─────────────────────────────────────────────────────────────────
+const dropzone        = document.getElementById('dropzone');
+const fileInput       = document.getElementById('fileInput');
+const fileListCard    = document.getElementById('fileListCard');
+const fileListEl      = document.getElementById('fileList');
+const emptyState      = document.getElementById('emptyState');
+const settingsCard    = document.getElementById('settingsCard');
+const dateColSelect   = document.getElementById('dateColSelect');
+const mergeBtn        = document.getElementById('mergeBtn');
+const mergeStatus     = document.getElementById('mergeStatus');
+const downloadSection = document.getElementById('downloadSection');
+const downloadBtn     = document.getElementById('downloadBtn');
+const filenameInput   = document.getElementById('filenameInput');
+const mergeInfoEl     = document.getElementById('mergeInfo');
+const toastEl         = document.getElementById('toast');
+const adInContent     = document.getElementById('adInContent');
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = '') {
+  toastEl.textContent = msg;
+  toastEl.className = 'show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toastEl.className = ''; }, 3200);
+}
+
+// ─── Drag & Drop ─────────────────────────────────────────────────────────────
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  handleFileList(e.dataTransfer.files);
+});
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { handleFileList(fileInput.files); fileInput.value = ''; });
+
+// ─── File Handling ────────────────────────────────────────────────────────────
+function handleFileList(fileList) {
+  Array.from(fileList).forEach(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['csv','xlsx','xls'].includes(ext)) {
+      showToast(t('errBadFile', f.name), 'error'); return;
+    }
+    if (files.find(x => x.name === f.name)) return;
+    readFile(f);
+  });
+}
+
+function readFile(f) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
+      files.push({ name: f.name, rows, columns });
+      onFilesChanged();
+    } catch { showToast(t('errBadFile', f.name), 'error'); }
+  };
+  reader.readAsBinaryString(f);
+}
+
+function removeFile(name) {
+  const idx = files.findIndex(f => f.name === name);
+  if (idx !== -1) files.splice(idx, 1);
+  mergedWorkbook = null;
+  downloadSection.classList.remove('visible');
+  downloadSection.style.display = 'none';
+  onFilesChanged();
+}
+
+function onFilesChanged() {
+  const hasFiles = files.length > 0;
+  fileListCard.style.display = hasFiles ? 'block' : 'none';
+  settingsCard.style.display = hasFiles ? 'block' : 'none';
+  adInContent.style.display  = hasFiles ? 'flex'  : 'none';
+  renderFileList();
+  updateDateColSelect();
+  updateMergeBtn();
+}
+
+// ─── File List ────────────────────────────────────────────────────────────────
+const previewOpenMap = {};
+
+function renderFileList() {
+  fileListEl.innerHTML = '';
+  if (!files.length) { emptyState.style.display = 'block'; return; }
+  emptyState.style.display = 'none';
+
+  files.forEach(f => {
+    const isOpen = !!previewOpenMap[f.name];
+    const card = document.createElement('div');
+    card.className = 'file-card';
+    const previewRows = f.rows.slice(0, 5);
+
+    card.innerHTML = `
+      <div class="file-card-header">
+        <div class="file-info">
+          <span>${fileIcon(f.name)}</span>
+          <div>
+            <div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div>
+            <div class="file-meta">${f.rows.length} ${t('rows')} · ${f.columns.length} ${t('cols')}</div>
+          </div>
+        </div>
+        <div class="file-card-actions">
+          <button class="btn-icon btn-toggle-preview" data-name="${esc(f.name)}">
+            ${isOpen ? t('previewHide') : t('previewShow')}
+          </button>
+          <button class="btn-icon danger" data-remove="${esc(f.name)}" title="Remove">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              <path d="M10 11v6"/><path d="M14 11v6"/>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="preview-wrap ${isOpen ? 'open' : ''}">
+        ${buildPreviewTable(f.columns, previewRows)}
+      </div>`;
+
+    card.querySelector('.btn-toggle-preview').addEventListener('click', () => {
+      previewOpenMap[f.name] = !previewOpenMap[f.name];
+      renderFileList();
+    });
+    card.querySelector('[data-remove]').addEventListener('click', () => removeFile(f.name));
+    fileListEl.appendChild(card);
+  });
+}
+
+function buildPreviewTable(columns, rows) {
+  if (!columns.length) return '<p style="padding:10px;color:#94a3b8;font-size:0.8rem;">No data</p>';
+  const th = columns.map(c => `<th>${esc(String(c))}</th>`).join('');
+  const trs = rows.map(r =>
+    `<tr>${columns.map(c => `<td>${esc(String(r[c] ?? ''))}</td>`).join('')}</tr>`
+  ).join('');
+  return `<table class="preview-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+function fileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const clr = ext === 'csv' ? '#16a34a' : '#2563eb';
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${clr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ─── Column Select ────────────────────────────────────────────────────────────
+function getAllColumns() {
+  const set = new Set();
+  files.forEach(f => f.columns.forEach(c => set.add(c)));
+  return [...set].sort();
+}
+
+function updateDateColSelect() {
+  const cur = dateColSelect.value;
+  dateColSelect.innerHTML = `<option value="">${t('dateColPlaceholder')}</option>`;
+  getAllColumns().forEach(col => {
+    const opt = document.createElement('option');
+    opt.value = col; opt.textContent = col;
+    if (col === cur) opt.selected = true;
+    dateColSelect.appendChild(opt);
+  });
+  updateMergeBtn();
+}
+
+dateColSelect.addEventListener('change', updateMergeBtn);
+function updateMergeBtn() {
+  mergeBtn.disabled = files.length === 0 || !dateColSelect.value;
+}
+
+// ─── Merge ────────────────────────────────────────────────────────────────────
+mergeBtn.addEventListener('click', () => {
+  if (!files.length) { showToast(t('errNoFiles'), 'error'); return; }
+  if (!dateColSelect.value) { showToast(t('errNoDateCol'), 'error'); return; }
+
+  const dateCol  = dateColSelect.value;
+  const sourceCol = t('sourceCol');
+  const otherCols = getAllColumns().filter(c => c !== dateCol && c !== sourceCol);
+  const finalCols = [dateCol, ...otherCols, sourceCol];
+
+  let allRows = [];
+  files.forEach(f => {
+    f.rows.forEach(row => {
+      const r = {};
+      finalCols.forEach(col => {
+        r[col] = col === sourceCol ? f.name : (row[col] ?? '');
+      });
+      allRows.push(r);
+    });
+  });
+
+  allRows.sort((a, b) => {
+    const va = parseDateVal(a[dateCol]);
+    const vb = parseDateVal(b[dateCol]);
+    return va < vb ? -1 : va > vb ? 1 : 0;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(allRows, { header: finalCols });
+  styleHeaderRow(ws, finalCols);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Consolidated');
+
+  mergedWorkbook = wb;
+  mergedRowCount = allRows.length;
+  mergedColCount = finalCols.length;
+
+  downloadSection.style.display = 'block';
+  downloadSection.classList.add('visible');
+  updateMergeInfo();
+  showToast(t('mergeSuccess', mergedRowCount, mergedColCount), 'success');
+});
+
+function parseDateVal(val) {
+  if (val == null || val === '') return '';
+  if (val instanceof Date) return val.getTime();
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? String(val) : d.getTime();
+}
+
+function styleHeaderRow(ws, columns) {
+  ws['!cols'] = columns.map(c => ({ wch: Math.max(14, String(c).length + 4) }));
+  columns.forEach((col, i) => {
+    const addr = XLSX.utils.encode_cell({ r: 0, c: i });
+    if (ws[addr]) {
+      ws[addr].s = {
+        font: { bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1E40AF' } },
+        alignment: { horizontal: 'center' }
+      };
+    }
+  });
+}
+
+function updateMergeInfo() {
+  mergeInfoEl.textContent = mergedWorkbook
+    ? t('mergeSuccess', mergedRowCount, mergedColCount) : '';
+}
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+downloadBtn.addEventListener('click', () => {
+  if (!mergedWorkbook) return;
+  const name = (filenameInput.value.trim() || 'consolidated').replace(/\.xlsx$/i,'') + '.xlsx';
+  const wbout = XLSX.write(mergedWorkbook, { bookType: 'xlsx', type: 'array' });
+  saveAs(new Blob([wbout], { type: 'application/octet-stream' }), name);
+  showToast(t('downloading'), 'success');
+});
+
+// ─── Feedback Widget ─────────────────────────────────────────────────────────
+const FEEDBACK_KEY = 'fileConsolidator_feedbacks';
+let selectedStar = 0;
+
+function getFeedbacks() {
+  try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY)) || []; }
+  catch { return []; }
+}
+function saveFeedback(rating, comment) {
+  const list = getFeedbacks();
+  list.push({ rating, comment: comment.trim(), ts: Date.now() });
+  localStorage.setItem(FEEDBACK_KEY, JSON.stringify(list));
+}
+
+function buildStars() {
+  const starRow = document.getElementById('starRow');
+  starRow.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'star-btn' + (i <= selectedStar ? ' active' : '');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', `${i} star`);
+    btn.textContent = '★';
+    btn.addEventListener('mouseenter', () => highlightStars(i));
+    btn.addEventListener('mouseleave', () => highlightStars(selectedStar));
+    btn.addEventListener('click', () => {
+      selectedStar = i;
+      highlightStars(i);
+      document.getElementById('feedbackSubmit').disabled = false;
+    });
+    starRow.appendChild(btn);
+  }
+}
+
+function highlightStars(n) {
+  document.querySelectorAll('#starRow .star-btn').forEach((btn, idx) => {
+    btn.classList.toggle('active', idx < n);
+  });
+}
+
+function renderFeedbackSummary() {
+  const list = getFeedbacks();
+  const summaryEl = document.getElementById('feedbackSummary');
+  if (!list.length) { summaryEl.textContent = ''; return; }
+  const avg = (list.reduce((s, f) => s + f.rating, 0) / list.length).toFixed(1);
+  summaryEl.textContent = t('feedbackSummary', avg, list.length);
+}
+
+document.getElementById('feedbackSubmit').addEventListener('click', () => {
+  if (!selectedStar) return;
+  const comment = document.getElementById('feedbackComment').value;
+  saveFeedback(selectedStar, comment);
+  document.getElementById('feedbackForm').style.display = 'none';
+  const thanksEl = document.getElementById('feedbackThanks');
+  thanksEl.style.display = 'block';
+  renderFeedbackSummary();
+  // Allow re-rating after 4 s
+  setTimeout(() => {
+    selectedStar = 0;
+    document.getElementById('feedbackComment').value = '';
+    document.getElementById('feedbackSubmit').disabled = true;
+    document.getElementById('feedbackForm').style.display = 'block';
+    thanksEl.style.display = 'none';
+    buildStars();
+  }, 4000);
+});
+
+// Also update placeholder when lang changes
+function applyFeedbackLang() {
+  document.getElementById('feedbackComment').placeholder = t('feedbackPlaceholder');
+  renderFeedbackSummary();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+buildStars();
+applyFeedbackLang();
+applyLang();
+</script>
+</body>
+</html>
