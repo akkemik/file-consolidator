@@ -213,15 +213,51 @@
     #pdfDownloadSection.visible { display: block; }
 
     /* ── RESPONSIVE ── */
+
+    /* Tablet: sidebar drops below main */
     @media (max-width: 860px) {
       .content-layout { flex-direction: column; }
       .content-sidebar { position: static; width: 100%; flex-direction: row; flex-wrap: wrap; }
       .ad-sidebar-rect { width: 100%; height: 100px; }
-      .mode-selector { flex-direction: column; }
     }
-    @media (max-width: 560px) {
-      .ad-top-banner, .ad-bottom-banner { height: 60px; }
+
+    /* Large phone / small tablet */
+    @media (max-width: 680px) {
+      :root { --gap: 14px; }
+      .page-wrapper { padding: 0 10px; }
+      header { padding: 0 14px; height: 52px; }
+      header .brand { font-size: 0.97rem; }
+      .card { padding: 16px 14px; }
+      .mode-selector { flex-direction: column; gap: 10px; }
+      /* Mode cards become compact horizontal rows */
+      .mode-card { padding: 14px; display: flex; align-items: center; text-align: left; gap: 14px; }
+      .mode-card .mode-icon { font-size: 1.5rem; margin-bottom: 0; flex-shrink: 0; }
+      .dropzone { padding: 22px 14px; }
+      .form-group select, .form-group input[type=text] { max-width: 100%; }
+      /* Stack action buttons full-width */
+      .action-bar { flex-direction: column; align-items: stretch; }
+      .action-bar .btn { width: 100%; justify-content: center; }
+      .download-row { flex-direction: column; align-items: stretch; }
+      .download-row .btn { width: 100%; justify-content: center; }
+      .download-row .form-group { min-width: 0; }
       .ext-label { display: none; }
+      .ad-top-banner { height: 60px; }
+      .ad-bottom-banner { height: 60px; }
+      .ad-in-content { height: 50px; }
+      /* Larger touch target for drag handle */
+      .drag-handle { padding: 6px 8px; }
+    }
+
+    /* Small phone portrait */
+    @media (max-width: 420px) {
+      header .brand span { font-size: 0.82rem; }
+      .card { padding: 14px 12px; }
+      .dropzone { padding: 18px 12px; }
+      .mode-card .mode-desc { display: none; }
+      /* Standard banner ad sizes don't fit — hide them */
+      .ad-top-banner, .ad-bottom-banner { display: none; }
+      /* Toast full-width at bottom */
+      #toast { left: 12px; right: 12px; bottom: 16px; max-width: none; }
     }
   </style>
 </head>
@@ -991,6 +1027,7 @@ function onPdfFilesChanged() {
 
 // ── Drag-to-reorder ─────────────────────────────────
 let dragSrcId = null;
+let touchDragId = null;
 
 function renderPdfFileList() {
   pdfFileListEl.innerHTML = '';
@@ -1028,7 +1065,7 @@ function renderPdfFileList() {
 
     item.querySelector('[data-remove]').addEventListener('click', () => removePdfFile(entry.id));
 
-    // Drag events
+    // Mouse drag-to-reorder (desktop)
     item.addEventListener('dragstart', e => { dragSrcId = entry.id; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     item.addEventListener('dragend', () => { dragSrcId = null; document.querySelectorAll('.pdf-file-item').forEach(el => el.classList.remove('dragging','drag-over-item')); });
     item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; item.classList.add('drag-over-item'); });
@@ -1043,6 +1080,41 @@ function renderPdfFileList() {
       const [moved] = pdfFiles.splice(fromIdx, 1);
       pdfFiles.splice(toIdx, 0, moved);
       renderPdfFileList();
+    });
+
+    // Touch drag-to-reorder (mobile) — initiate only from drag handle
+    const dragHandleEl = item.querySelector('.drag-handle');
+    dragHandleEl.addEventListener('touchstart', e => {
+      touchDragId = entry.id;
+      item.classList.add('dragging');
+      e.preventDefault(); // prevent scroll while dragging
+    }, { passive: false });
+
+    item.addEventListener('touchmove', e => {
+      if (touchDragId === null) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const over = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pdf-file-item');
+      document.querySelectorAll('.pdf-file-item').forEach(el => el.classList.remove('drag-over-item'));
+      if (over && over !== item) over.classList.add('drag-over-item');
+    }, { passive: false });
+
+    item.addEventListener('touchend', e => {
+      if (touchDragId === null) return;
+      const touch = e.changedTouches[0];
+      const over = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.pdf-file-item');
+      document.querySelectorAll('.pdf-file-item').forEach(el => el.classList.remove('dragging', 'drag-over-item'));
+      if (over && over !== item) {
+        const toId = Number(over.dataset.id);
+        const fromIdx = pdfFiles.findIndex(f => f.id === touchDragId);
+        const toIdx   = pdfFiles.findIndex(f => f.id === toId);
+        if (fromIdx !== -1 && toIdx !== -1) {
+          const [moved] = pdfFiles.splice(fromIdx, 1);
+          pdfFiles.splice(toIdx, 0, moved);
+          renderPdfFileList();
+        }
+      }
+      touchDragId = null;
     });
 
     pdfFileListEl.appendChild(item);
