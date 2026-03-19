@@ -502,6 +502,7 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" is too large (max ${mb} MB). Skipped.`,
     errEncryptedPdf: (n) => `"${n}" is password-protected and cannot be merged. Skipped.`,
     downloading: 'File downloaded!',
+    csvPreparingDownload: 'Preparing download…',
   },
   tr: {
     langName: 'Türkçe',
@@ -564,6 +565,7 @@ const i18n = {
     errFileTooLarge: (n, mb) => `"${n}" çok büyük (maks. ${mb} MB). Atlandı.`,
     errEncryptedPdf: (n) => `"${n}" parola korumalı, birleştirilemez. Atlandı.`,
     downloading: 'Dosya indirildi!',
+    csvPreparingDownload: 'İndirme hazırlanıyor…',
   }
 };
 
@@ -826,11 +828,15 @@ function updateDateColSelect() {
 dateColSelect.addEventListener('change', updateCsvMergeBtn);
 function updateCsvMergeBtn() { csvMergeBtn.disabled = csvFiles.length === 0 || !dateColSelect.value; }
 
-csvMergeBtn.addEventListener('click', () => {
+csvMergeBtn.addEventListener('click', async () => {
   if (!csvFiles.length) { showToast(t('errNoFiles'), 'error'); return; }
   if (!dateColSelect.value) { showToast(t('errNoDateCol'), 'error'); return; }
 
+  csvMergeBtn.disabled = true;
   appendCsvLog(t('csvLogMerging'));
+
+  // Yield to browser so the log entry renders before heavy work begins
+  await new Promise(r => setTimeout(r, 0));
 
   const dateCol   = dateColSelect.value;
   const sourceCol = t('sourceCol');
@@ -854,6 +860,10 @@ csvMergeBtn.addEventListener('click', () => {
     allRows.push(r);
   }));
   allRows.sort((a, b) => { const va = parseDateVal(a[dateCol]), vb = parseDateVal(b[dateCol]); return va < vb ? -1 : va > vb ? 1 : 0; });
+
+  // Yield again before the heavy XLSX sheet-building step
+  await new Promise(r => setTimeout(r, 0));
+
   const ws = XLSX.utils.json_to_sheet(allRows, { header: finalCols });
   ws['!cols'] = finalCols.map(c => ({ wch: Math.max(14, String(c).length + 4) }));
   finalCols.forEach((c, i) => {
@@ -869,6 +879,7 @@ csvMergeBtn.addEventListener('click', () => {
   appendCsvLog(t('csvLogDone', csvMergedRows, csvMergedCols), 'log-done');
   appendCsvLog(t('csvLogFeedback'), 'log-feedback');
   showToast(t('csvMergeSuccess', csvMergedRows, csvMergedCols), 'success');
+  updateCsvMergeBtn();
 });
 
 function parseDateVal(val) {
@@ -882,11 +893,18 @@ function updateCsvMergeInfo() {
   csvMergeInfo.textContent = csvMergedWorkbook ? t('csvMergeSuccess', csvMergedRows, csvMergedCols) : '';
 }
 
-csvDownloadBtn.addEventListener('click', () => {
+csvDownloadBtn.addEventListener('click', async () => {
   if (!csvMergedWorkbook) return;
+  csvDownloadBtn.disabled = true;
+  appendCsvLog(t('csvPreparingDownload'));
+
+  // Yield to browser so the log entry renders before the blocking XLSX.write call
+  await new Promise(r => setTimeout(r, 0));
+
   const name = (csvFilenameInput.value.trim() || 'consolidated').replace(/\.xlsx$/i,'') + '.xlsx';
   saveAs(new Blob([XLSX.write(csvMergedWorkbook, { bookType:'xlsx', type:'array' })], { type:'application/octet-stream' }), name);
   showToast(t('downloading'), 'success');
+  csvDownloadBtn.disabled = false;
 });
 
 // ════════════════════════════════════════════════════════
