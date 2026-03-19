@@ -677,7 +677,7 @@ function esc(str) {
 // ── CSV / EXCEL SECTION ──────────────────────────────
 // ════════════════════════════════════════════════════════
 const csvFiles = [];
-let csvMergedWorkbook = null, csvMergedRows = 0, csvMergedCols = 0;
+let csvMergedWorkbook = null, csvMergedBytes = null, csvMergedRows = 0, csvMergedCols = 0;
 
 const csvDropzone   = document.getElementById('csvDropzone');
 const csvFileInput  = document.getElementById('csvFileInput');
@@ -727,7 +727,7 @@ function readCsvFile(f) {
 function removeCsvFile(name) {
   const i = csvFiles.findIndex(f => f.name === name);
   if (i !== -1) csvFiles.splice(i, 1);
-  csvMergedWorkbook = null;
+  csvMergedWorkbook = null; csvMergedBytes = null;
   csvDownloadSection.classList.remove('visible');
   csvDownloadSection.style.display = 'none';
   // Rebuild log from remaining files
@@ -873,6 +873,12 @@ csvMergeBtn.addEventListener('click', async () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Consolidated');
   csvMergedWorkbook = wb; csvMergedRows = allRows.length; csvMergedCols = finalCols.length;
+
+  // Pre-serialize to bytes now (during merge, where blocking is expected)
+  // so the Download button is instant with no heavy work
+  await new Promise(r => setTimeout(r, 0));
+  csvMergedBytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+
   csvDownloadSection.style.display = 'block';
   csvDownloadSection.classList.add('visible');
   updateCsvMergeInfo();
@@ -893,18 +899,12 @@ function updateCsvMergeInfo() {
   csvMergeInfo.textContent = csvMergedWorkbook ? t('csvMergeSuccess', csvMergedRows, csvMergedCols) : '';
 }
 
-csvDownloadBtn.addEventListener('click', async () => {
-  if (!csvMergedWorkbook) return;
-  csvDownloadBtn.disabled = true;
-  appendCsvLog(t('csvPreparingDownload'));
-
-  // Yield to browser so the log entry renders before the blocking XLSX.write call
-  await new Promise(r => setTimeout(r, 0));
-
+csvDownloadBtn.addEventListener('click', () => {
+  if (!csvMergedBytes) return;
   const name = (csvFilenameInput.value.trim() || 'consolidated').replace(/\.xlsx$/i,'') + '.xlsx';
-  saveAs(new Blob([XLSX.write(csvMergedWorkbook, { bookType:'xlsx', type:'array' })], { type:'application/octet-stream' }), name);
+  // Bytes are pre-computed at merge time — no blocking work here
+  saveAs(new Blob([csvMergedBytes], { type: 'application/octet-stream' }), name);
   showToast(t('downloading'), 'success');
-  csvDownloadBtn.disabled = false;
 });
 
 // ════════════════════════════════════════════════════════
