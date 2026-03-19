@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>File Consolidator</title>
+  <title>File Tools</title>
   <!-- SheetJS -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- FileSaver -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <!-- pdf-lib -->
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -22,354 +24,182 @@
       --clr-text: #1e293b;
       --clr-muted: #64748b;
       --clr-header-bg: #1e40af;
+      --clr-pdf: #dc2626;
+      --clr-img: #7c3aed;
       --radius: 8px;
       --shadow: 0 1px 4px rgba(0,0,0,0.10);
       --sidebar-w: 320px;
       --gap: 20px;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--clr-bg);
-      color: var(--clr-text);
-      min-height: 100vh;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--clr-bg); color: var(--clr-text); min-height: 100vh; }
 
     /* ── HEADER ── */
-    header {
-      background: var(--clr-header-bg);
-      color: #fff;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 56px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    header .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
-    header .brand svg { width: 26px; height: 26px; }
-    #langSelect {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.35);
-      color: #fff;
-      border-radius: 6px;
-      padding: 4px 10px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      outline: none;
-    }
-    #langSelect option { background: #1e40af; color: #fff; }
+    header { background: var(--clr-header-bg); color: #fff; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; box-shadow: 0 2px 8px rgba(0,0,0,0.18); position: sticky; top: 0; z-index: 100; }
+    header .brand { display: flex; align-items: center; gap: 10px; font-size: 1.1rem; font-weight: 700; }
+    header .brand svg { width: 24px; height: 24px; }
+    header .header-right { display: flex; align-items: center; gap: 12px; }
+    #langSelect { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.35); color: #fff; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; cursor: pointer; outline: none; }
+    #langSelect option { background: #1e40af; }
+    .mode-badge { font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: rgba(255,255,255,0.18); letter-spacing: 0.04em; display: none; }
+    .mode-badge.visible { display: inline-flex; }
 
     /* ── AD SLOTS ── */
-    .ad-slot {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f8fafc;
-      border: 1.5px dashed #cbd5e1;
-      border-radius: var(--radius);
-      color: #94a3b8;
-      font-size: 0.78rem;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      overflow: hidden;
-      /* Replace inner content with your ad code */
-    }
-    .ad-slot .ad-label {
-      pointer-events: none;
-      user-select: none;
-    }
+    .ad-slot { display: flex; align-items: center; justify-content: center; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: var(--radius); color: #94a3b8; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; overflow: hidden; }
+    .ad-top-banner { max-width: 728px; height: 90px; margin: 14px auto 0; }
+    .ad-bottom-banner { max-width: 728px; height: 90px; margin: 0 auto 24px; }
+    .ad-sidebar-rect { width: 300px; height: 250px; flex-shrink: 0; }
+    .ad-in-content { width: 100%; max-width: 468px; height: 60px; margin: 0 auto; }
 
-    /* Top banner 728×90 */
-    .ad-top-banner {
-      max-width: 728px;
-      height: 90px;
-      margin: 14px auto 0;
-    }
-
-    /* Bottom banner 728×90 */
-    .ad-bottom-banner {
-      max-width: 728px;
-      height: 90px;
-      margin: 0 auto 24px;
-    }
-
-    /* Sidebar 300×250 */
-    .ad-sidebar-rect {
-      width: 300px;
-      height: 250px;
-      flex-shrink: 0;
-    }
-
-    /* In-content 468×60 */
-    .ad-in-content {
-      width: 100%;
-      max-width: 468px;
-      height: 60px;
-      margin: 0 auto;
-    }
-
-    /* ── PAGE WRAPPER ── */
-    .page-wrapper {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-
-    /* ── CONTENT + SIDEBAR LAYOUT ── */
-    .content-layout {
-      display: flex;
-      gap: var(--gap);
-      align-items: flex-start;
-      padding: 20px 0 40px;
-    }
+    /* ── PAGE ── */
+    .page-wrapper { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+    .content-layout { display: flex; gap: var(--gap); align-items: flex-start; padding: 20px 0 40px; }
     .content-main { flex: 1; min-width: 0; }
-    .content-sidebar {
-      width: var(--sidebar-w);
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: sticky;
-      top: 72px;
+    .content-sidebar { width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 72px; }
+
+    /* ── MODE SELECTOR ── */
+    .mode-selector { display: flex; gap: 16px; margin-bottom: var(--gap); }
+    .mode-card {
+      flex: 1; background: var(--clr-surface); border: 2px solid var(--clr-border);
+      border-radius: 12px; padding: 22px 18px; cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      text-align: center; user-select: none;
     }
+    .mode-card:hover { border-color: var(--clr-primary); box-shadow: 0 4px 16px rgba(37,99,235,0.12); transform: translateY(-1px); }
+    .mode-card.active { border-color: var(--clr-primary); background: #eff6ff; box-shadow: 0 4px 16px rgba(37,99,235,0.15); }
+    .mode-card.active-pdf { border-color: #7c3aed; background: #f5f3ff; box-shadow: 0 4px 16px rgba(124,58,237,0.15); }
+    .mode-card .mode-icon { font-size: 2rem; margin-bottom: 8px; }
+    .mode-card .mode-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .mode-card .mode-desc { font-size: 0.78rem; color: var(--clr-muted); line-height: 1.4; }
 
     /* ── CARD ── */
-    .card {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 20px 24px;
-      margin-bottom: var(--gap);
-    }
-    .card-title {
-      font-size: 0.78rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--clr-muted);
-      margin-bottom: 14px;
-    }
+    .card { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px 24px; margin-bottom: var(--gap); }
+    .card-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); margin-bottom: 14px; }
+
+    /* ── SECURITY BADGE ── */
+    .security-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; color: var(--clr-success); background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 20px; padding: 3px 10px; margin-bottom: 12px; }
+    .security-badge svg { flex-shrink: 0; }
 
     /* ── DROPZONE ── */
-    #dropzone {
-      border: 2px dashed var(--clr-primary);
-      border-radius: var(--radius);
-      background: #eff6ff;
-      text-align: center;
-      padding: 40px 20px;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    #dropzone.drag-over { background: #dbeafe; border-color: #1d4ed8; }
-    #dropzone svg { color: var(--clr-primary); margin-bottom: 10px; }
-    #dropzone p { color: var(--clr-muted); font-size: 0.95rem; }
-    #dropzone .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 6px; }
-    #fileInput { display: none; }
+    .dropzone { border: 2px dashed var(--clr-primary); border-radius: var(--radius); background: #eff6ff; text-align: center; padding: 36px 20px; cursor: pointer; transition: background 0.15s, border-color 0.15s; }
+    .dropzone.pdf-zone { border-color: #7c3aed; background: #f5f3ff; }
+    .dropzone.drag-over { background: #dbeafe !important; border-color: #1d4ed8 !important; }
+    .dropzone.pdf-zone.drag-over { background: #ede9fe !important; border-color: #6d28d9 !important; }
+    .dropzone svg { margin-bottom: 10px; }
+    .dropzone p { color: var(--clr-muted); font-size: 0.95rem; }
+    .dropzone .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 6px; }
+    .file-input-hidden { display: none; }
 
-    /* ── FILE CARDS ── */
-    #fileList { display: flex; flex-direction: column; gap: 12px; }
+    /* ── FILE LIST (CSV mode) ── */
+    #csvFileList { display: flex; flex-direction: column; gap: 12px; }
     .file-card { border: 1px solid var(--clr-border); border-radius: var(--radius); overflow: hidden; }
-    .file-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 14px;
-      background: #f8fafc;
-      gap: 10px;
-    }
+    .file-card-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #f8fafc; gap: 10px; }
     .file-card-header .file-info { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
     .file-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .file-meta { font-size: 0.78rem; color: var(--clr-muted); white-space: nowrap; }
     .file-card-actions { display: flex; align-items: center; gap: 6px; }
-    .btn-icon {
-      background: none; border: none; cursor: pointer;
-      padding: 4px 6px; border-radius: 5px;
-      display: flex; align-items: center;
-      color: var(--clr-muted);
-      transition: background 0.1s, color 0.1s;
-    }
+    .btn-icon { background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 5px; display: flex; align-items: center; color: var(--clr-muted); transition: background 0.1s, color 0.1s; }
     .btn-icon:hover { background: #f1f5f9; }
     .btn-icon.danger:hover { color: var(--clr-danger); background: #fee2e2; }
     .btn-toggle-preview { font-size: 0.78rem; color: var(--clr-primary); }
-
-    /* ── PREVIEW TABLE ── */
-    .preview-wrap {
-      overflow-x: auto;
-      border-top: 1px solid var(--clr-border);
-      max-height: 0;
-      overflow-y: hidden;
-      transition: max-height 0.3s ease;
-    }
+    .preview-wrap { overflow-x: auto; border-top: 1px solid var(--clr-border); max-height: 0; overflow-y: hidden; transition: max-height 0.3s ease; }
     .preview-wrap.open { max-height: 260px; overflow-y: auto; }
     .preview-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
-    .preview-table th {
-      background: #f1f5f9; padding: 6px 10px;
-      text-align: left; border-bottom: 1px solid var(--clr-border);
-      white-space: nowrap; position: sticky; top: 0;
-    }
-    .preview-table td {
-      padding: 5px 10px; border-bottom: 1px solid #f1f5f9;
-      white-space: nowrap; max-width: 180px;
-      overflow: hidden; text-overflow: ellipsis;
-    }
+    .preview-table th { background: #f1f5f9; padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--clr-border); white-space: nowrap; position: sticky; top: 0; }
+    .preview-table td { padding: 5px 10px; border-bottom: 1px solid #f1f5f9; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
     .preview-table tr:last-child td { border-bottom: none; }
+
+    /* ── PDF FILE LIST (drag-to-reorder) ── */
+    #pdfFileList { display: flex; flex-direction: column; gap: 8px; }
+    .pdf-file-item {
+      display: flex; align-items: center; gap: 10px;
+      border: 1px solid var(--clr-border); border-radius: var(--radius);
+      padding: 10px 12px; background: var(--clr-surface);
+      cursor: grab; transition: box-shadow 0.15s, opacity 0.15s, background 0.1s;
+      user-select: none;
+    }
+    .pdf-file-item:active { cursor: grabbing; }
+    .pdf-file-item.dragging { opacity: 0.4; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+    .pdf-file-item.drag-over-item { border-color: #7c3aed; background: #f5f3ff; }
+    .drag-handle { color: #cbd5e1; flex-shrink: 0; cursor: grab; }
+    .pdf-order-num { font-size: 0.78rem; font-weight: 700; color: var(--clr-muted); width: 20px; text-align: center; flex-shrink: 0; }
+    .pdf-file-thumb { width: 36px; height: 36px; border-radius: 5px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--clr-border); }
+    .pdf-file-thumb-placeholder { width: 36px; height: 36px; border-radius: 5px; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .pdf-file-thumb-placeholder.img-thumb { background: #ede9fe; }
+    .pdf-file-details { flex: 1; min-width: 0; }
+    .pdf-file-name { font-weight: 600; font-size: 0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pdf-file-meta { font-size: 0.75rem; color: var(--clr-muted); }
+    .pdf-file-actions { flex-shrink: 0; }
+    .pdf-type-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .badge-pdf { background: #fee2e2; color: #dc2626; }
+    .badge-img { background: #ede9fe; color: #7c3aed; }
 
     /* ── FORM ── */
     .form-group { display: flex; flex-direction: column; gap: 6px; }
-    .form-group label { font-size: 0.85rem; font-weight: 600; color: var(--clr-text); }
-    .form-group select, .form-group input[type=text] {
-      border: 1px solid var(--clr-border);
-      border-radius: 6px; padding: 8px 12px;
-      font-size: 0.9rem; outline: none;
-      width: 100%; max-width: 360px;
-      background: #fff; transition: border-color 0.15s;
-    }
-    .form-group select:focus, .form-group input[type=text]:focus {
-      border-color: var(--clr-primary);
-      box-shadow: 0 0 0 3px #dbeafe;
-    }
+    .form-group label { font-size: 0.85rem; font-weight: 600; }
+    .form-group select, .form-group input[type=text] { border: 1px solid var(--clr-border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; outline: none; width: 100%; max-width: 360px; background: #fff; transition: border-color 0.15s; }
+    .form-group select:focus, .form-group input[type=text]:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px #dbeafe; }
 
     /* ── BUTTONS ── */
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 9px 20px; border-radius: 7px;
-      border: none; font-size: 0.9rem; font-weight: 600;
-      cursor: pointer; transition: background 0.15s, opacity 0.15s;
-    }
+    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 20px; border-radius: 7px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
     .btn-primary { background: var(--clr-primary); color: #fff; }
     .btn-primary:hover { background: var(--clr-primary-hover); }
-    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-purple { background: #7c3aed; color: #fff; }
+    .btn-purple:hover { background: #6d28d9; }
     .btn-success { background: var(--clr-success); color: #fff; }
     .btn-success:hover { background: #15803d; }
-    .btn-success:disabled { opacity: 0.45; cursor: not-allowed; }
-
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .action-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
     .download-row { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
     .download-row .form-group { flex: 1; min-width: 200px; }
-    .ext-label { padding: 9px 10px; font-size: 0.9rem; color: var(--clr-muted); font-weight: 600; white-space: nowrap; }
+    .ext-label { padding: 9px 10px; font-size: 0.9rem; color: var(--clr-muted); font-weight: 600; }
+
+    /* ── PROGRESS BAR ── */
+    .progress-wrap { margin-top: 12px; display: none; }
+    .progress-wrap.visible { display: block; }
+    .progress-bar-track { height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: #7c3aed; border-radius: 3px; transition: width 0.2s; width: 0%; }
+    .progress-label { font-size: 0.78rem; color: var(--clr-muted); margin-top: 4px; }
 
     /* ── SIDEBAR WIDGET ── */
-    .sidebar-widget {
-      background: var(--clr-surface);
-      border: 1px solid var(--clr-border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 14px;
-    }
-    .sidebar-widget .widget-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--clr-muted);
-      margin-bottom: 10px;
-    }
-    .sidebar-tip {
-      font-size: 0.82rem;
-      color: var(--clr-text);
-      line-height: 1.55;
-    }
+    .sidebar-widget { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px; }
+    .sidebar-widget .widget-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); margin-bottom: 10px; }
+    .sidebar-tip { font-size: 0.82rem; color: var(--clr-text); line-height: 1.55; }
     .sidebar-tip ul { padding-left: 16px; }
     .sidebar-tip ul li { margin-bottom: 4px; }
 
+    /* ── FEEDBACK ── */
+    .star-row { display: flex; gap: 4px; margin: 8px 0 10px; }
+    .star-btn { background: none; border: none; cursor: pointer; padding: 2px; font-size: 1.6rem; line-height: 1; color: #d1d5db; transition: color 0.12s, transform 0.12s; }
+    .star-btn:hover, .star-btn.active { color: #f59e0b; }
+    .star-btn:hover { transform: scale(1.15); }
+    .feedback-comment { width: 100%; border: 1px solid var(--clr-border); border-radius: 6px; padding: 7px 10px; font-size: 0.82rem; font-family: inherit; resize: vertical; min-height: 56px; outline: none; transition: border-color 0.15s; margin-bottom: 8px; }
+    .feedback-comment:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px #dbeafe; }
+    .btn-feedback { width: 100%; background: var(--clr-primary); color: #fff; border: none; border-radius: 6px; padding: 7px 0; font-size: 0.84rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-feedback:hover { background: var(--clr-primary-hover); }
+    .btn-feedback:disabled { opacity: 0.45; cursor: not-allowed; }
+    .feedback-thanks { display: none; text-align: center; padding: 10px 0 4px; color: var(--clr-success); font-size: 0.85rem; font-weight: 600; }
+    .feedback-summary { font-size: 0.76rem; color: var(--clr-muted); margin-top: 8px; text-align: center; }
+
     /* ── TOAST ── */
-    #toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: #1e293b; color: #fff;
-      padding: 12px 20px; border-radius: 8px;
-      font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,0.22);
-      opacity: 0; transform: translateY(12px);
-      transition: opacity 0.25s, transform 0.25s;
-      pointer-events: none; z-index: 999; max-width: 340px;
-    }
+    #toast { position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 0.88rem; box-shadow: 0 4px 16px rgba(0,0,0,0.22); opacity: 0; transform: translateY(12px); transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 999; max-width: 340px; }
     #toast.show { opacity: 1; transform: translateY(0); }
     #toast.error { background: #7f1d1d; }
     #toast.success { background: #14532d; }
 
-    #emptyState { text-align:center; padding:20px 0 8px; color:var(--clr-muted); font-size:0.88rem; }
-    #downloadSection { display: none; }
-    #downloadSection.visible { display: block; }
+    #csvEmptyState { text-align:center; padding:16px 0 4px; color:var(--clr-muted); font-size:0.88rem; }
+    #pdfEmptyState { text-align:center; padding:16px 0 4px; color:var(--clr-muted); font-size:0.88rem; }
+    #csvDownloadSection { display: none; }
+    #csvDownloadSection.visible { display: block; }
+    #pdfDownloadSection { display: none; }
+    #pdfDownloadSection.visible { display: block; }
 
     /* ── RESPONSIVE ── */
-    /* ── FEEDBACK WIDGET ── */
-    .feedback-widget {}
-    .star-row {
-      display: flex;
-      gap: 4px;
-      margin: 8px 0 10px;
-    }
-    .star-btn {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 2px;
-      font-size: 1.6rem;
-      line-height: 1;
-      color: #d1d5db;
-      transition: color 0.12s, transform 0.12s;
-    }
-    .star-btn:hover, .star-btn.active { color: #f59e0b; }
-    .star-btn:hover { transform: scale(1.15); }
-    .feedback-comment {
-      width: 100%;
-      border: 1px solid var(--clr-border);
-      border-radius: 6px;
-      padding: 7px 10px;
-      font-size: 0.82rem;
-      font-family: inherit;
-      resize: vertical;
-      min-height: 56px;
-      outline: none;
-      transition: border-color 0.15s;
-      margin-bottom: 8px;
-    }
-    .feedback-comment:focus { border-color: var(--clr-primary); box-shadow: 0 0 0 3px #dbeafe; }
-    .btn-feedback {
-      width: 100%;
-      background: var(--clr-primary);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 7px 0;
-      font-size: 0.84rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-feedback:hover { background: var(--clr-primary-hover); }
-    .btn-feedback:disabled { opacity: 0.45; cursor: not-allowed; }
-    .feedback-thanks {
-      display: none;
-      text-align: center;
-      padding: 10px 0 4px;
-      color: var(--clr-success);
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-    .feedback-summary {
-      font-size: 0.76rem;
-      color: var(--clr-muted);
-      margin-top: 8px;
-      text-align: center;
-    }
-    .stars-display { color: #f59e0b; letter-spacing: 1px; }
-
     @media (max-width: 860px) {
       .content-layout { flex-direction: column; }
       .content-sidebar { position: static; width: 100%; flex-direction: row; flex-wrap: wrap; }
       .ad-sidebar-rect { width: 100%; height: 100px; }
+      .mode-selector { flex-direction: column; }
     }
     @media (max-width: 560px) {
       .ad-top-banner, .ad-bottom-banner { height: 60px; }
@@ -379,254 +209,322 @@
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════
-     HEADER
-════════════════════════════════════════════════════ -->
 <header>
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-      <polyline points="10 9 9 9 8 9"/>
     </svg>
-    <span data-i18n="appTitle">File Consolidator</span>
+    <span data-i18n="appTitle">File Tools</span>
   </div>
-  <select id="langSelect" title="Language"></select>
+  <div class="header-right">
+    <span class="mode-badge" id="headerModeBadge"></span>
+    <select id="langSelect"></select>
+  </div>
 </header>
 
-<!-- ═══════════════════════════════════════════════════
-     TOP BANNER AD  (728×90)
-     ↓↓ Replace the inner div with your ad code ↓↓
-════════════════════════════════════════════════════ -->
+<!-- TOP BANNER AD (728×90) — Replace inner content with your ad code -->
 <div class="page-wrapper">
   <div class="ad-slot ad-top-banner" id="adTopBanner">
-    <span class="ad-label">Advertisement · 728×90</span>
-    <!-- INSERT AD CODE HERE -->
+    <span>Advertisement · 728×90</span><!-- INSERT AD CODE HERE -->
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════
-     MAIN CONTENT + RIGHT SIDEBAR
-════════════════════════════════════════════════════ -->
 <div class="page-wrapper">
   <div class="content-layout">
 
-    <!-- ── LEFT: MAIN APP CONTENT ── -->
+    <!-- ── MAIN ── -->
     <div class="content-main">
 
-      <!-- STEP 1: Upload -->
-      <div class="card">
-        <div class="card-title" data-i18n="step1">Step 1 — Upload Files</div>
-        <div id="dropzone">
-          <input type="file" id="fileInput" multiple accept=".csv,.xlsx,.xls" />
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="16 16 12 12 8 16"/>
-            <line x1="12" y1="12" x2="12" y2="21"/>
-            <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-          </svg>
-          <p data-i18n="dropzoneText">Drag &amp; drop files here, or click to browse</p>
-          <p class="hint" data-i18n="dropzoneHint">Supports .csv, .xlsx, .xls — multiple files allowed</p>
+      <!-- MODE SELECTOR -->
+      <div class="mode-selector" id="modeSelector">
+        <div class="mode-card" id="modeCardCsv" onclick="selectMode('csv')">
+          <div class="mode-icon">📊</div>
+          <div class="mode-title" data-i18n="modeCsvTitle">CSV / Excel</div>
+          <div class="mode-desc" data-i18n="modeCsvDesc">Consolidate multiple spreadsheet files into one Excel file</div>
+        </div>
+        <div class="mode-card" id="modeCardPdf" onclick="selectMode('pdf')">
+          <div class="mode-icon">📄</div>
+          <div class="mode-title" data-i18n="modePdfTitle">PDF Tools</div>
+          <div class="mode-desc" data-i18n="modePdfDesc">Merge PDF files or convert JPG/JPEG images into a single PDF</div>
         </div>
       </div>
 
-      <!-- STEP 2: File List -->
-      <div class="card" id="fileListCard" style="display:none;">
-        <div class="card-title" data-i18n="step2">Step 2 — Loaded Files</div>
-        <div id="emptyState" data-i18n="noFiles">No files loaded yet.</div>
-        <div id="fileList"></div>
-      </div>
+      <!-- ═══════════════════════════════════════════
+           CSV / EXCEL SECTION
+      ════════════════════════════════════════════ -->
+      <div id="csvSection" style="display:none;">
 
-      <!-- ═══ IN-CONTENT AD (468×60) ═══════════════════
-           Shown between step 2 and step 3.
-           ↓↓ Replace the inner span with your ad code ↓↓ -->
-      <div class="ad-slot ad-in-content" id="adInContent" style="display:none;">
-        <span class="ad-label">Advertisement · 468×60</span>
-        <!-- INSERT AD CODE HERE -->
-      </div>
-
-      <!-- STEP 3: Settings + Merge -->
-      <div class="card" id="settingsCard" style="display:none;">
-        <div class="card-title" data-i18n="step3">Step 3 — Configure &amp; Merge</div>
-        <div class="form-group" style="margin-bottom:18px; max-width:360px;">
-          <label data-i18n="dateColLabel">Date Column</label>
-          <select id="dateColSelect">
-            <option value="" data-i18n="dateColPlaceholder">— select date column —</option>
-          </select>
-        </div>
-        <div class="action-bar">
-          <button class="btn btn-primary" id="mergeBtn" disabled>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-              <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-            </svg>
-            <span data-i18n="mergeBtn">Merge Files</span>
-          </button>
-          <span id="mergeStatus" style="font-size:0.85rem; color:var(--clr-muted);"></span>
-        </div>
-      </div>
-
-      <!-- STEP 4: Download -->
-      <div class="card" id="downloadSection">
-        <div class="card-title" data-i18n="step4">Step 4 — Download</div>
-        <div class="download-row">
-          <div class="form-group">
-            <label data-i18n="filenameLabel">Output File Name</label>
-            <input type="text" id="filenameInput" value="consolidated" />
+        <!-- Step 1 -->
+        <div class="card">
+          <div class="card-title" data-i18n="step1">Step 1 — Upload Files</div>
+          <div class="dropzone" id="csvDropzone">
+            <input type="file" class="file-input-hidden" id="csvFileInput" multiple accept=".csv,.xlsx,.xls" />
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            <p data-i18n="dropzoneText">Drag & drop files here, or click to browse</p>
+            <p class="hint" data-i18n="csvDropzoneHint">Supports .csv, .xlsx, .xls — multiple files allowed</p>
           </div>
-          <span class="ext-label">.xlsx</span>
-          <button class="btn btn-success" id="downloadBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            <span data-i18n="downloadBtn">Download .xlsx</span>
-          </button>
         </div>
-        <p id="mergeInfo" style="margin-top:12px; font-size:0.82rem; color:var(--clr-muted);"></p>
-      </div>
+
+        <!-- Step 2 -->
+        <div class="card" id="csvFileListCard" style="display:none;">
+          <div class="card-title" data-i18n="step2">Step 2 — Loaded Files</div>
+          <div id="csvEmptyState" data-i18n="noFiles">No files loaded yet.</div>
+          <div id="csvFileList"></div>
+        </div>
+
+        <!-- In-content ad -->
+        <div class="ad-slot ad-in-content" id="adInContent" style="display:none;">
+          <span>Advertisement · 468×60</span><!-- INSERT AD CODE HERE -->
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card" id="csvSettingsCard" style="display:none;">
+          <div class="card-title" data-i18n="step3">Step 3 — Configure &amp; Merge</div>
+          <div class="form-group" style="margin-bottom:18px; max-width:360px;">
+            <label data-i18n="dateColLabel">Date Column</label>
+            <select id="dateColSelect">
+              <option value="" data-i18n="dateColPlaceholder">— select date column —</option>
+            </select>
+          </div>
+          <div class="action-bar">
+            <button class="btn btn-primary" id="csvMergeBtn" disabled>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+              <span data-i18n="mergeBtn">Merge Files</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4 download -->
+        <div class="card" id="csvDownloadSection">
+          <div class="card-title" data-i18n="step4">Step 4 — Download</div>
+          <div class="download-row">
+            <div class="form-group">
+              <label data-i18n="filenameLabel">Output File Name</label>
+              <input type="text" id="csvFilenameInput" value="consolidated" />
+            </div>
+            <span class="ext-label">.xlsx</span>
+            <button class="btn btn-success" id="csvDownloadBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span data-i18n="csvDownloadBtn">Download .xlsx</span>
+            </button>
+          </div>
+          <p id="csvMergeInfo" style="margin-top:10px; font-size:0.82rem; color:var(--clr-muted);"></p>
+        </div>
+
+      </div><!-- /#csvSection -->
+
+      <!-- ═══════════════════════════════════════════
+           PDF TOOLS SECTION
+      ════════════════════════════════════════════ -->
+      <div id="pdfSection" style="display:none;">
+
+        <!-- Step 1 -->
+        <div class="card">
+          <div class="card-title" data-i18n="pdfStep1">Step 1 — Upload Files</div>
+          <div class="security-badge">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span data-i18n="securityNote">All processing is local — no files leave your browser</span>
+          </div>
+          <div class="dropzone pdf-zone" id="pdfDropzone">
+            <input type="file" class="file-input-hidden" id="pdfFileInput" multiple accept=".pdf,.jpg,.jpeg" />
+            <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+            <p data-i18n="pdfDropzoneText">Drag & drop PDF or JPG/JPEG files here, or click to browse</p>
+            <p class="hint" data-i18n="pdfDropzoneHint">Supports .pdf, .jpg, .jpeg — drag to reorder after upload</p>
+          </div>
+        </div>
+
+        <!-- Step 2 file list -->
+        <div class="card" id="pdfFileListCard" style="display:none;">
+          <div class="card-title" data-i18n="pdfStep2">Step 2 — Arrange Files (drag to reorder)</div>
+          <div id="pdfEmptyState" data-i18n="noFiles">No files loaded yet.</div>
+          <div id="pdfFileList"></div>
+        </div>
+
+        <!-- Step 3 merge + download -->
+        <div class="card" id="pdfMergeCard" style="display:none;">
+          <div class="card-title" data-i18n="pdfStep3">Step 3 — Merge &amp; Download</div>
+          <div class="download-row" style="margin-bottom:12px;">
+            <div class="form-group">
+              <label data-i18n="filenameLabel">Output File Name</label>
+              <input type="text" id="pdfFilenameInput" value="merged" />
+            </div>
+            <span class="ext-label">.pdf</span>
+            <button class="btn btn-purple" id="pdfMergeBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span data-i18n="pdfMergeBtn">Merge &amp; Download PDF</span>
+            </button>
+          </div>
+          <div class="progress-wrap" id="pdfProgressWrap">
+            <div class="progress-bar-track"><div class="progress-bar-fill" id="pdfProgressBar"></div></div>
+            <div class="progress-label" id="pdfProgressLabel"></div>
+          </div>
+        </div>
+
+      </div><!-- /#pdfSection -->
 
     </div><!-- /.content-main -->
 
-    <!-- ── RIGHT: SIDEBAR ── -->
+    <!-- ── SIDEBAR ── -->
     <aside class="content-sidebar">
 
-      <!-- ═══ SIDEBAR AD (300×250) ════════════════════
-           ↓↓ Replace the inner span with your ad code ↓↓ -->
+      <!-- Sidebar ad (300×250) — Replace inner content with your ad code -->
       <div class="ad-slot ad-sidebar-rect" id="adSidebar">
-        <span class="ad-label">Advertisement · 300×250</span>
-        <!-- INSERT AD CODE HERE -->
+        <span>Advertisement · 300×250</span><!-- INSERT AD CODE HERE -->
       </div>
 
-      <!-- Tips widget -->
+      <!-- Tips -->
       <div class="sidebar-widget">
         <div class="widget-title" data-i18n="tipsTitle">Tips</div>
-        <div class="sidebar-tip" data-i18n="tipsBody">
-          <!-- Dynamic content via JS -->
-        </div>
+        <div class="sidebar-tip" id="sidebarTips"></div>
       </div>
 
-      <!-- ═══ FEEDBACK WIDGET ═══════════════════════ -->
-      <div class="sidebar-widget feedback-widget" id="feedbackWidget">
+      <!-- Feedback -->
+      <div class="sidebar-widget" id="feedbackWidget">
         <div class="widget-title" data-i18n="feedbackTitle">Rate This App</div>
-
         <div id="feedbackForm">
           <div class="star-row" id="starRow" role="group" aria-label="Rating"></div>
-          <textarea
-            class="feedback-comment"
-            id="feedbackComment"
-            rows="2"
-            data-i18n-placeholder="feedbackPlaceholder"
-          ></textarea>
+          <textarea class="feedback-comment" id="feedbackComment" rows="2"></textarea>
           <button class="btn-feedback" id="feedbackSubmit" disabled data-i18n="feedbackSubmit">Submit Feedback</button>
         </div>
-
-        <div class="feedback-thanks" id="feedbackThanks" data-i18n="feedbackThanks">
-          Thank you for your feedback! ✓
-        </div>
+        <div class="feedback-thanks" id="feedbackThanks" data-i18n="feedbackThanks">Thank you! ✓</div>
         <div class="feedback-summary" id="feedbackSummary"></div>
       </div>
 
     </aside>
 
-  </div><!-- /.content-layout -->
-</div><!-- /.page-wrapper -->
+  </div>
+</div>
 
-<!-- ═══════════════════════════════════════════════════
-     BOTTOM BANNER AD  (728×90)
-     ↓↓ Replace the inner span with your ad code ↓↓
-════════════════════════════════════════════════════ -->
+<!-- BOTTOM BANNER AD (728×90) — Replace inner content with your ad code -->
 <div class="page-wrapper">
   <div class="ad-slot ad-bottom-banner" id="adBottomBanner">
-    <span class="ad-label">Advertisement · 728×90</span>
-    <!-- INSERT AD CODE HERE -->
+    <span>Advertisement · 728×90</span><!-- INSERT AD CODE HERE -->
   </div>
 </div>
 
 <div id="toast"></div>
 
-<!-- ═══════════════════════════════════════════════════
-     JAVASCRIPT
-════════════════════════════════════════════════════ -->
 <script>
-// ─── i18n ────────────────────────────────────────────────────────────────────
+'use strict';
+// ════════════════════════════════════════════════════════
+// i18n
+// ════════════════════════════════════════════════════════
 const i18n = {
   en: {
     langName: 'English',
-    appTitle: 'File Consolidator',
+    appTitle: 'File Tools',
+    modeCsvTitle: 'CSV / Excel',
+    modeCsvDesc: 'Consolidate multiple spreadsheet files into one Excel file',
+    modePdfTitle: 'PDF Tools',
+    modePdfDesc: 'Merge PDF files or convert JPG/JPEG images into a single PDF',
+    modeBadgeCsv: 'CSV / Excel',
+    modeBadgePdf: 'PDF Tools',
     step1: 'Step 1 — Upload Files',
     step2: 'Step 2 — Loaded Files',
     step3: 'Step 3 — Configure & Merge',
     step4: 'Step 4 — Download',
     dropzoneText: 'Drag & drop files here, or click to browse',
-    dropzoneHint: 'Supports .csv, .xlsx, .xls — multiple files allowed',
+    csvDropzoneHint: 'Supports .csv, .xlsx, .xls — multiple files allowed',
+    pdfStep1: 'Step 1 — Upload Files',
+    pdfStep2: 'Step 2 — Arrange Files (drag to reorder)',
+    pdfStep3: 'Step 3 — Merge & Download',
+    pdfDropzoneText: 'Drag & drop PDF or JPG/JPEG files here, or click to browse',
+    pdfDropzoneHint: 'Supports .pdf, .jpg, .jpeg — drag to reorder after upload',
+    securityNote: 'All processing is local — no files leave your browser',
     noFiles: 'No files loaded yet.',
     dateColLabel: 'Date Column',
     dateColPlaceholder: '— select date column —',
     mergeBtn: 'Merge Files',
+    pdfMergeBtn: 'Merge & Download PDF',
     filenameLabel: 'Output File Name',
-    downloadBtn: 'Download .xlsx',
+    csvDownloadBtn: 'Download .xlsx',
     previewShow: 'Show preview',
     previewHide: 'Hide preview',
     rows: 'rows',
     cols: 'cols',
+    pages: 'pages',
     sourceCol: 'Source File',
     tipsTitle: 'Tips',
-    tipsBody: '<ul><li>You can drop multiple files at once.</li><li>Files with different columns will be merged — missing values left empty.</li><li>Pick the column that contains dates for correct ordering.</li><li>A "Source File" column is added automatically.</li></ul>',
+    tipsCsv: '<ul><li>Drop multiple files at once.</li><li>Files with different columns are merged — missing values left empty.</li><li>Pick the date column for correct sort order.</li><li>A "Source File" column is added automatically.</li></ul>',
+    tipsPdf: '<ul><li>Drop PDF and/or JPG/JPEG files.</li><li>Drag items in the list to reorder pages.</li><li>Images become full-page in the output PDF.</li><li>All processing happens locally — your files never leave the browser.</li></ul>',
+    tipsDefault: '<ul><li>Choose a mode above to get started.</li></ul>',
     feedbackTitle: 'Rate This App',
     feedbackPlaceholder: 'Share your thoughts (optional)…',
     feedbackSubmit: 'Submit Feedback',
     feedbackThanks: 'Thank you for your feedback! ✓',
-    feedbackSummary: (avg, count) => `Average: ${avg} ★ from ${count} rating${count !== 1 ? 's' : ''}`,
-    mergeSuccess: (r, c) => `Merged: ${r} rows × ${c} columns`,
+    feedbackSummary: (avg, n) => `Average: ${avg} ★ from ${n} rating${n !== 1 ? 's' : ''}`,
+    csvMergeSuccess: (r, c) => `Merged: ${r} rows × ${c} columns`,
+    pdfMerging: (i, n) => `Processing file ${i} of ${n}…`,
+    pdfDone: (n) => `Done! ${n} file${n !== 1 ? 's' : ''} merged into one PDF.`,
     errNoFiles: 'Please upload at least one file.',
     errNoDateCol: 'Please select a date column.',
     errBadFile: (n) => `Could not read "${n}". File skipped.`,
+    errInvalidSignature: (n) => `"${n}" failed security check — file content does not match its extension. Skipped.`,
+    errFileTooLarge: (n, mb) => `"${n}" is too large (max ${mb} MB). Skipped.`,
+    errEncryptedPdf: (n) => `"${n}" is password-protected and cannot be merged. Skipped.`,
     downloading: 'File downloaded!',
   },
   tr: {
     langName: 'Türkçe',
-    appTitle: 'Dosya Birleştirici',
+    appTitle: 'Dosya Araçları',
+    modeCsvTitle: 'CSV / Excel',
+    modeCsvDesc: 'Birden fazla tablo dosyasını tek bir Excel dosyasında birleştir',
+    modePdfTitle: 'PDF Araçları',
+    modePdfDesc: 'PDF dosyalarını birleştir veya JPG/JPEG görsellerini tek PDF\'e dönüştür',
+    modeBadgeCsv: 'CSV / Excel',
+    modeBadgePdf: 'PDF Araçları',
     step1: 'Adım 1 — Dosya Yükle',
     step2: 'Adım 2 — Yüklenen Dosyalar',
     step3: 'Adım 3 — Yapılandır & Birleştir',
     step4: 'Adım 4 — İndir',
-    dropzoneText: 'Dosyaları buraya sürükleyin veya tıklayıp seçin',
-    dropzoneHint: '.csv, .xlsx, .xls desteklenir — çoklu seçim mümkün',
+    dropzoneText: 'Dosyaları sürükleyin veya tıklayıp seçin',
+    csvDropzoneHint: '.csv, .xlsx, .xls desteklenir — çoklu seçim mümkün',
+    pdfStep1: 'Adım 1 — Dosya Yükle',
+    pdfStep2: 'Adım 2 — Sıralamayı Düzenle (sürükleyerek)',
+    pdfStep3: 'Adım 3 — Birleştir & İndir',
+    pdfDropzoneText: 'PDF veya JPG/JPEG dosyalarını sürükleyin veya tıklayın',
+    pdfDropzoneHint: '.pdf, .jpg, .jpeg desteklenir — yükledikten sonra sürükleyerek sıralayın',
+    securityNote: 'Tüm işlemler tarayıcınızda gerçekleşir — dosyalar hiçbir sunucuya gönderilmez',
     noFiles: 'Henüz dosya yüklenmedi.',
     dateColLabel: 'Tarih Kolonu',
     dateColPlaceholder: '— tarih kolonu seçin —',
     mergeBtn: 'Birleştir',
+    pdfMergeBtn: 'Birleştir & PDF İndir',
     filenameLabel: 'Çıktı Dosya Adı',
-    downloadBtn: '.xlsx İndir',
+    csvDownloadBtn: '.xlsx İndir',
     previewShow: 'Önizleme göster',
     previewHide: 'Önizleme gizle',
     rows: 'satır',
     cols: 'kolon',
+    pages: 'sayfa',
     sourceCol: 'Kaynak Dosya',
     tipsTitle: 'İpuçları',
-    tipsBody: '<ul><li>Aynı anda birden fazla dosya bırakabilirsiniz.</li><li>Farklı kolonlara sahip dosyalar birleştirilir; eksik değerler boş bırakılır.</li><li>Doğru sıralama için tarih bilgisi içeren kolonu seçin.</li><li>"Kaynak Dosya" kolonu otomatik eklenir.</li></ul>',
+    tipsCsv: '<ul><li>Birden fazla dosyayı aynı anda bırakabilirsiniz.</li><li>Farklı kolonlara sahip dosyalar birleştirilir; eksik değerler boş bırakılır.</li><li>Doğru sıralama için tarih kolonunu seçin.</li><li>"Kaynak Dosya" kolonu otomatik eklenir.</li></ul>',
+    tipsPdf: '<ul><li>PDF ve/veya JPG/JPEG dosyaları yükleyin.</li><li>Listedeki öğeleri sürükleyerek sırayı değiştirin.</li><li>Görseller PDF\'te tam sayfa olarak yer alır.</li><li>Tüm işlemler tarayıcıda gerçekleşir — dosyalarınız hiçbir yere gönderilmez.</li></ul>',
+    tipsDefault: '<ul><li>Başlamak için yukarıdan bir mod seçin.</li></ul>',
     feedbackTitle: 'Uygulamayı Puanlayın',
     feedbackPlaceholder: 'Görüşlerinizi yazın (isteğe bağlı)…',
     feedbackSubmit: 'Gönder',
     feedbackThanks: 'Geri bildiriminiz için teşekkürler! ✓',
-    feedbackSummary: (avg, count) => `Ortalama: ${avg} ★ — ${count} değerlendirme`,
-    mergeSuccess: (r, c) => `Birleştirildi: ${r} satır × ${c} kolon`,
+    feedbackSummary: (avg, n) => `Ortalama: ${avg} ★ — ${n} değerlendirme`,
+    csvMergeSuccess: (r, c) => `Birleştirildi: ${r} satır × ${c} kolon`,
+    pdfMerging: (i, n) => `Dosya işleniyor: ${i} / ${n}…`,
+    pdfDone: (n) => `Tamamlandı! ${n} dosya tek PDF olarak birleştirildi.`,
     errNoFiles: 'Lütfen en az bir dosya yükleyin.',
     errNoDateCol: 'Lütfen bir tarih kolonu seçin.',
     errBadFile: (n) => `"${n}" okunamadı. Dosya atlandı.`,
+    errInvalidSignature: (n) => `"${n}" güvenlik kontrolünden geçemedi — dosya içeriği uzantısıyla eşleşmiyor. Atlandı.`,
+    errFileTooLarge: (n, mb) => `"${n}" çok büyük (maks. ${mb} MB). Atlandı.`,
+    errEncryptedPdf: (n) => `"${n}" parola korumalı, birleştirilemez. Atlandı.`,
     downloading: 'Dosya indirildi!',
   }
 };
 
 let lang = 'en';
-
 function t(key, ...args) {
-  const val = i18n[lang][key];
-  if (typeof val === 'function') return val(...args);
-  return val ?? key;
+  const v = i18n[lang][key];
+  return typeof v === 'function' ? v(...args) : (v ?? key);
 }
 
 function applyLang() {
@@ -634,83 +532,131 @@ function applyLang() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     const val = t(key);
-    if (val !== undefined) {
-      // Allow HTML in tipsBody
-      if (key === 'tipsBody') { el.innerHTML = val; }
-      else { el.textContent = val; }
-    }
+    if (val !== undefined) el.textContent = val;
   });
-  renderFileList();
+  document.getElementById('feedbackComment').placeholder = t('feedbackPlaceholder');
+  updateSidebarTips();
+  renderFeedbackSummary();
+  renderCsvFileList();
   updateDateColSelect();
-  updateMergeInfo();
+  renderPdfFileList();
+  updateCsvMergeInfo();
 }
 
 // Build lang selector
-const langSelect = document.getElementById('langSelect');
+const langSelectEl = document.getElementById('langSelect');
 Object.entries(i18n).forEach(([code, data]) => {
   const opt = document.createElement('option');
-  opt.value = code;
-  opt.textContent = data.langName;
-  langSelect.appendChild(opt);
+  opt.value = code; opt.textContent = data.langName;
+  langSelectEl.appendChild(opt);
 });
-langSelect.addEventListener('change', () => { lang = langSelect.value; applyLang(); applyFeedbackLang(); });
+langSelectEl.addEventListener('change', () => { lang = langSelectEl.value; applyLang(); });
 
-// ─── State ───────────────────────────────────────────────────────────────────
-const files = [];
-let mergedWorkbook = null;
-let mergedRowCount = 0;
-let mergedColCount = 0;
+// ════════════════════════════════════════════════════════
+// MODE SWITCHING
+// ════════════════════════════════════════════════════════
+let currentMode = null;
 
-// ─── DOM refs ─────────────────────────────────────────────────────────────────
-const dropzone        = document.getElementById('dropzone');
-const fileInput       = document.getElementById('fileInput');
-const fileListCard    = document.getElementById('fileListCard');
-const fileListEl      = document.getElementById('fileList');
-const emptyState      = document.getElementById('emptyState');
-const settingsCard    = document.getElementById('settingsCard');
-const dateColSelect   = document.getElementById('dateColSelect');
-const mergeBtn        = document.getElementById('mergeBtn');
-const mergeStatus     = document.getElementById('mergeStatus');
-const downloadSection = document.getElementById('downloadSection');
-const downloadBtn     = document.getElementById('downloadBtn');
-const filenameInput   = document.getElementById('filenameInput');
-const mergeInfoEl     = document.getElementById('mergeInfo');
-const toastEl         = document.getElementById('toast');
-const adInContent     = document.getElementById('adInContent');
+function selectMode(mode) {
+  currentMode = mode;
+  document.getElementById('csvSection').style.display = mode === 'csv' ? 'block' : 'none';
+  document.getElementById('pdfSection').style.display = mode === 'pdf' ? 'block' : 'none';
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
+  document.getElementById('modeCardCsv').className = 'mode-card' + (mode === 'csv' ? ' active' : '');
+  document.getElementById('modeCardPdf').className = 'mode-card' + (mode === 'pdf' ? ' active-pdf' : '');
+
+  const badge = document.getElementById('headerModeBadge');
+  badge.textContent = mode === 'csv' ? t('modeBadgeCsv') : t('modeBadgePdf');
+  badge.classList.add('visible');
+
+  updateSidebarTips();
+}
+
+function updateSidebarTips() {
+  const el = document.getElementById('sidebarTips');
+  if (currentMode === 'csv') el.innerHTML = t('tipsCsv');
+  else if (currentMode === 'pdf') el.innerHTML = t('tipsPdf');
+  else el.innerHTML = t('tipsDefault');
+}
+
+// ════════════════════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════════════════════
+const toastEl = document.getElementById('toast');
 let toastTimer;
 function showToast(msg, type = '') {
   toastEl.textContent = msg;
   toastEl.className = 'show' + (type ? ' ' + type : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastEl.className = ''; }, 3200);
+  toastTimer = setTimeout(() => { toastEl.className = ''; }, 3600);
 }
 
-// ─── Drag & Drop ─────────────────────────────────────────────────────────────
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag-over');
-  handleFileList(e.dataTransfer.files);
-});
-dropzone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => { handleFileList(fileInput.files); fileInput.value = ''; });
+// ════════════════════════════════════════════════════════
+// SECURITY HELPERS
+// ════════════════════════════════════════════════════════
+const MAX_FILE_MB = 200;
 
-// ─── File Handling ────────────────────────────────────────────────────────────
-function handleFileList(fileList) {
-  Array.from(fileList).forEach(f => {
+async function readMagicBytes(file, n) {
+  const buf = await file.slice(0, n).arrayBuffer();
+  return new Uint8Array(buf);
+}
+
+async function validatePdf(file) {
+  const bytes = await readMagicBytes(file, 4);
+  // %PDF = 0x25 0x50 0x44 0x46
+  return bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46;
+}
+
+async function validateJpeg(file) {
+  const bytes = await readMagicBytes(file, 3);
+  // FF D8 FF
+  return bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF;
+}
+
+function checkSize(file) {
+  return file.size <= MAX_FILE_MB * 1024 * 1024;
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ════════════════════════════════════════════════════════
+// ── CSV / EXCEL SECTION ──────────────────────────────
+// ════════════════════════════════════════════════════════
+const csvFiles = [];
+let csvMergedWorkbook = null, csvMergedRows = 0, csvMergedCols = 0;
+
+const csvDropzone   = document.getElementById('csvDropzone');
+const csvFileInput  = document.getElementById('csvFileInput');
+const csvFileListCard  = document.getElementById('csvFileListCard');
+const csvFileListEl    = document.getElementById('csvFileList');
+const csvEmptyState    = document.getElementById('csvEmptyState');
+const csvSettingsCard  = document.getElementById('csvSettingsCard');
+const dateColSelect    = document.getElementById('dateColSelect');
+const csvMergeBtn      = document.getElementById('csvMergeBtn');
+const csvDownloadSection = document.getElementById('csvDownloadSection');
+const csvDownloadBtn   = document.getElementById('csvDownloadBtn');
+const csvFilenameInput = document.getElementById('csvFilenameInput');
+const csvMergeInfo     = document.getElementById('csvMergeInfo');
+const adInContent      = document.getElementById('adInContent');
+
+csvDropzone.addEventListener('dragover', e => { e.preventDefault(); csvDropzone.classList.add('drag-over'); });
+csvDropzone.addEventListener('dragleave', () => csvDropzone.classList.remove('drag-over'));
+csvDropzone.addEventListener('drop', e => { e.preventDefault(); csvDropzone.classList.remove('drag-over'); handleCsvFiles(e.dataTransfer.files); });
+csvDropzone.addEventListener('click', () => csvFileInput.click());
+csvFileInput.addEventListener('change', () => { handleCsvFiles(csvFileInput.files); csvFileInput.value = ''; });
+
+function handleCsvFiles(list) {
+  Array.from(list).forEach(f => {
     const ext = f.name.split('.').pop().toLowerCase();
-    if (!['csv','xlsx','xls'].includes(ext)) {
-      showToast(t('errBadFile', f.name), 'error'); return;
-    }
-    if (files.find(x => x.name === f.name)) return;
-    readFile(f);
+    if (!['csv','xlsx','xls'].includes(ext)) { showToast(t('errBadFile', f.name), 'error'); return; }
+    if (csvFiles.find(x => x.name === f.name)) return;
+    readCsvFile(f);
   });
 }
 
-function readFile(f) {
+function readCsvFile(f) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -718,167 +664,120 @@ function readFile(f) {
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
       const columns = rows.length > 0 ? Object.keys(rows[0]) : [];
-      files.push({ name: f.name, rows, columns });
-      onFilesChanged();
+      csvFiles.push({ name: f.name, rows, columns });
+      onCsvFilesChanged();
     } catch { showToast(t('errBadFile', f.name), 'error'); }
   };
   reader.readAsBinaryString(f);
 }
 
-function removeFile(name) {
-  const idx = files.findIndex(f => f.name === name);
-  if (idx !== -1) files.splice(idx, 1);
-  mergedWorkbook = null;
-  downloadSection.classList.remove('visible');
-  downloadSection.style.display = 'none';
-  onFilesChanged();
+function removeCsvFile(name) {
+  const i = csvFiles.findIndex(f => f.name === name);
+  if (i !== -1) csvFiles.splice(i, 1);
+  csvMergedWorkbook = null;
+  csvDownloadSection.classList.remove('visible');
+  csvDownloadSection.style.display = 'none';
+  onCsvFilesChanged();
 }
 
-function onFilesChanged() {
-  const hasFiles = files.length > 0;
-  fileListCard.style.display = hasFiles ? 'block' : 'none';
-  settingsCard.style.display = hasFiles ? 'block' : 'none';
-  adInContent.style.display  = hasFiles ? 'flex'  : 'none';
-  renderFileList();
+function onCsvFilesChanged() {
+  const has = csvFiles.length > 0;
+  csvFileListCard.style.display = has ? 'block' : 'none';
+  csvSettingsCard.style.display = has ? 'block' : 'none';
+  adInContent.style.display     = has ? 'flex'  : 'none';
+  renderCsvFileList();
   updateDateColSelect();
-  updateMergeBtn();
+  updateCsvMergeBtn();
 }
 
-// ─── File List ────────────────────────────────────────────────────────────────
-const previewOpenMap = {};
-
-function renderFileList() {
-  fileListEl.innerHTML = '';
-  if (!files.length) { emptyState.style.display = 'block'; return; }
-  emptyState.style.display = 'none';
-
-  files.forEach(f => {
-    const isOpen = !!previewOpenMap[f.name];
+const csvPreviewOpen = {};
+function renderCsvFileList() {
+  csvFileListEl.innerHTML = '';
+  if (!csvFiles.length) { csvEmptyState.style.display = 'block'; return; }
+  csvEmptyState.style.display = 'none';
+  csvFiles.forEach(f => {
+    const isOpen = !!csvPreviewOpen[f.name];
     const card = document.createElement('div');
     card.className = 'file-card';
-    const previewRows = f.rows.slice(0, 5);
-
     card.innerHTML = `
       <div class="file-card-header">
         <div class="file-info">
-          <span>${fileIcon(f.name)}</span>
+          <span>${csvFileIcon(f.name)}</span>
           <div>
             <div class="file-name" title="${esc(f.name)}">${esc(f.name)}</div>
             <div class="file-meta">${f.rows.length} ${t('rows')} · ${f.columns.length} ${t('cols')}</div>
           </div>
         </div>
         <div class="file-card-actions">
-          <button class="btn-icon btn-toggle-preview" data-name="${esc(f.name)}">
-            ${isOpen ? t('previewHide') : t('previewShow')}
-          </button>
-          <button class="btn-icon danger" data-remove="${esc(f.name)}" title="Remove">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-              <path d="M10 11v6"/><path d="M14 11v6"/>
-              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
-            </svg>
+          <button class="btn-icon btn-toggle-preview" data-name="${esc(f.name)}">${isOpen ? t('previewHide') : t('previewShow')}</button>
+          <button class="btn-icon danger" data-remove="${esc(f.name)}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
           </button>
         </div>
       </div>
-      <div class="preview-wrap ${isOpen ? 'open' : ''}">
-        ${buildPreviewTable(f.columns, previewRows)}
-      </div>`;
-
-    card.querySelector('.btn-toggle-preview').addEventListener('click', () => {
-      previewOpenMap[f.name] = !previewOpenMap[f.name];
-      renderFileList();
-    });
-    card.querySelector('[data-remove]').addEventListener('click', () => removeFile(f.name));
-    fileListEl.appendChild(card);
+      <div class="preview-wrap ${isOpen ? 'open' : ''}">${buildPreviewTable(f.columns, f.rows.slice(0,5))}</div>`;
+    card.querySelector('.btn-toggle-preview').addEventListener('click', () => { csvPreviewOpen[f.name] = !csvPreviewOpen[f.name]; renderCsvFileList(); });
+    card.querySelector('[data-remove]').addEventListener('click', () => removeCsvFile(f.name));
+    csvFileListEl.appendChild(card);
   });
 }
 
-function buildPreviewTable(columns, rows) {
-  if (!columns.length) return '<p style="padding:10px;color:#94a3b8;font-size:0.8rem;">No data</p>';
-  const th = columns.map(c => `<th>${esc(String(c))}</th>`).join('');
-  const trs = rows.map(r =>
-    `<tr>${columns.map(c => `<td>${esc(String(r[c] ?? ''))}</td>`).join('')}</tr>`
-  ).join('');
-  return `<table class="preview-table"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+function buildPreviewTable(cols, rows) {
+  if (!cols.length) return '<p style="padding:10px;color:#94a3b8;font-size:0.8rem;">No data</p>';
+  return `<table class="preview-table"><thead><tr>${cols.map(c=>`<th>${esc(String(c))}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td>${esc(String(r[c]??''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 }
 
-function fileIcon(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  const clr = ext === 'csv' ? '#16a34a' : '#2563eb';
+function csvFileIcon(name) {
+  const clr = name.toLowerCase().endsWith('.csv') ? '#16a34a' : '#2563eb';
   return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${clr}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
 }
 
-function esc(str) {
-  return String(str)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-
-// ─── Column Select ────────────────────────────────────────────────────────────
-function getAllColumns() {
-  const set = new Set();
-  files.forEach(f => f.columns.forEach(c => set.add(c)));
-  return [...set].sort();
+function getAllCsvCols() {
+  const s = new Set();
+  csvFiles.forEach(f => f.columns.forEach(c => s.add(c)));
+  return [...s].sort();
 }
 
 function updateDateColSelect() {
   const cur = dateColSelect.value;
   dateColSelect.innerHTML = `<option value="">${t('dateColPlaceholder')}</option>`;
-  getAllColumns().forEach(col => {
-    const opt = document.createElement('option');
-    opt.value = col; opt.textContent = col;
-    if (col === cur) opt.selected = true;
-    dateColSelect.appendChild(opt);
+  getAllCsvCols().forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === cur) o.selected = true;
+    dateColSelect.appendChild(o);
   });
-  updateMergeBtn();
+  updateCsvMergeBtn();
 }
+dateColSelect.addEventListener('change', updateCsvMergeBtn);
+function updateCsvMergeBtn() { csvMergeBtn.disabled = csvFiles.length === 0 || !dateColSelect.value; }
 
-dateColSelect.addEventListener('change', updateMergeBtn);
-function updateMergeBtn() {
-  mergeBtn.disabled = files.length === 0 || !dateColSelect.value;
-}
-
-// ─── Merge ────────────────────────────────────────────────────────────────────
-mergeBtn.addEventListener('click', () => {
-  if (!files.length) { showToast(t('errNoFiles'), 'error'); return; }
+csvMergeBtn.addEventListener('click', () => {
+  if (!csvFiles.length) { showToast(t('errNoFiles'), 'error'); return; }
   if (!dateColSelect.value) { showToast(t('errNoDateCol'), 'error'); return; }
-
-  const dateCol  = dateColSelect.value;
-  const sourceCol = t('sourceCol');
-  const otherCols = getAllColumns().filter(c => c !== dateCol && c !== sourceCol);
+  const dateCol = dateColSelect.value, sourceCol = t('sourceCol');
+  const otherCols = getAllCsvCols().filter(c => c !== dateCol && c !== sourceCol);
   const finalCols = [dateCol, ...otherCols, sourceCol];
-
   let allRows = [];
-  files.forEach(f => {
-    f.rows.forEach(row => {
-      const r = {};
-      finalCols.forEach(col => {
-        r[col] = col === sourceCol ? f.name : (row[col] ?? '');
-      });
-      allRows.push(r);
-    });
-  });
-
-  allRows.sort((a, b) => {
-    const va = parseDateVal(a[dateCol]);
-    const vb = parseDateVal(b[dateCol]);
-    return va < vb ? -1 : va > vb ? 1 : 0;
-  });
-
+  csvFiles.forEach(f => f.rows.forEach(row => {
+    const r = {};
+    finalCols.forEach(c => { r[c] = c === sourceCol ? f.name : (row[c] ?? ''); });
+    allRows.push(r);
+  }));
+  allRows.sort((a, b) => { const va = parseDateVal(a[dateCol]), vb = parseDateVal(b[dateCol]); return va < vb ? -1 : va > vb ? 1 : 0; });
   const ws = XLSX.utils.json_to_sheet(allRows, { header: finalCols });
-  styleHeaderRow(ws, finalCols);
+  ws['!cols'] = finalCols.map(c => ({ wch: Math.max(14, String(c).length + 4) }));
+  finalCols.forEach((c, i) => {
+    const addr = XLSX.utils.encode_cell({ r:0, c:i });
+    if (ws[addr]) ws[addr].s = { font: { bold:true, color:{rgb:'FFFFFF'} }, fill:{fgColor:{rgb:'1E40AF'}}, alignment:{horizontal:'center'} };
+  });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Consolidated');
-
-  mergedWorkbook = wb;
-  mergedRowCount = allRows.length;
-  mergedColCount = finalCols.length;
-
-  downloadSection.style.display = 'block';
-  downloadSection.classList.add('visible');
-  updateMergeInfo();
-  showToast(t('mergeSuccess', mergedRowCount, mergedColCount), 'success');
+  csvMergedWorkbook = wb; csvMergedRows = allRows.length; csvMergedCols = finalCols.length;
+  csvDownloadSection.style.display = 'block';
+  csvDownloadSection.classList.add('visible');
+  updateCsvMergeInfo();
+  showToast(t('csvMergeSuccess', csvMergedRows, csvMergedCols), 'success');
 });
 
 function parseDateVal(val) {
@@ -888,42 +787,234 @@ function parseDateVal(val) {
   return isNaN(d.getTime()) ? String(val) : d.getTime();
 }
 
-function styleHeaderRow(ws, columns) {
-  ws['!cols'] = columns.map(c => ({ wch: Math.max(14, String(c).length + 4) }));
-  columns.forEach((col, i) => {
-    const addr = XLSX.utils.encode_cell({ r: 0, c: i });
-    if (ws[addr]) {
-      ws[addr].s = {
-        font: { bold: true, color: { rgb: 'FFFFFF' } },
-        fill: { fgColor: { rgb: '1E40AF' } },
-        alignment: { horizontal: 'center' }
-      };
-    }
-  });
+function updateCsvMergeInfo() {
+  csvMergeInfo.textContent = csvMergedWorkbook ? t('csvMergeSuccess', csvMergedRows, csvMergedCols) : '';
 }
 
-function updateMergeInfo() {
-  mergeInfoEl.textContent = mergedWorkbook
-    ? t('mergeSuccess', mergedRowCount, mergedColCount) : '';
-}
-
-// ─── Download ─────────────────────────────────────────────────────────────────
-downloadBtn.addEventListener('click', () => {
-  if (!mergedWorkbook) return;
-  const name = (filenameInput.value.trim() || 'consolidated').replace(/\.xlsx$/i,'') + '.xlsx';
-  const wbout = XLSX.write(mergedWorkbook, { bookType: 'xlsx', type: 'array' });
-  saveAs(new Blob([wbout], { type: 'application/octet-stream' }), name);
+csvDownloadBtn.addEventListener('click', () => {
+  if (!csvMergedWorkbook) return;
+  const name = (csvFilenameInput.value.trim() || 'consolidated').replace(/\.xlsx$/i,'') + '.xlsx';
+  saveAs(new Blob([XLSX.write(csvMergedWorkbook, { bookType:'xlsx', type:'array' })], { type:'application/octet-stream' }), name);
   showToast(t('downloading'), 'success');
 });
 
-// ─── Feedback Widget ─────────────────────────────────────────────────────────
-const FEEDBACK_KEY = 'fileConsolidator_feedbacks';
+// ════════════════════════════════════════════════════════
+// ── PDF TOOLS SECTION ────────────────────────────────
+// ════════════════════════════════════════════════════════
+const pdfFiles = []; // [{ id, file, name, type:'pdf'|'jpeg', meta:'3 pages'|'1200×900', thumbUrl }]
+let pdfIdCounter = 0;
+
+const pdfDropzone      = document.getElementById('pdfDropzone');
+const pdfFileInput     = document.getElementById('pdfFileInput');
+const pdfFileListCard  = document.getElementById('pdfFileListCard');
+const pdfFileListEl    = document.getElementById('pdfFileList');
+const pdfEmptyState    = document.getElementById('pdfEmptyState');
+const pdfMergeCard     = document.getElementById('pdfMergeCard');
+const pdfMergeBtn      = document.getElementById('pdfMergeBtn');
+const pdfFilenameInput = document.getElementById('pdfFilenameInput');
+const pdfProgressWrap  = document.getElementById('pdfProgressWrap');
+const pdfProgressBar   = document.getElementById('pdfProgressBar');
+const pdfProgressLabel = document.getElementById('pdfProgressLabel');
+
+pdfDropzone.addEventListener('dragover', e => { e.preventDefault(); pdfDropzone.classList.add('drag-over'); });
+pdfDropzone.addEventListener('dragleave', () => pdfDropzone.classList.remove('drag-over'));
+pdfDropzone.addEventListener('drop', e => { e.preventDefault(); pdfDropzone.classList.remove('drag-over'); handlePdfFiles(e.dataTransfer.files); });
+pdfDropzone.addEventListener('click', () => pdfFileInput.click());
+pdfFileInput.addEventListener('change', () => { handlePdfFiles(pdfFileInput.files); pdfFileInput.value = ''; });
+
+async function handlePdfFiles(list) {
+  for (const f of Array.from(list)) {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['pdf','jpg','jpeg'].includes(ext)) { showToast(t('errBadFile', f.name), 'error'); continue; }
+    if (!checkSize(f)) { showToast(t('errFileTooLarge', f.name, MAX_FILE_MB), 'error'); continue; }
+    if (pdfFiles.find(x => x.name === f.name)) continue;
+
+    // Security: validate magic bytes
+    let valid = false;
+    if (ext === 'pdf') valid = await validatePdf(f);
+    else valid = await validateJpeg(f);
+
+    if (!valid) { showToast(t('errInvalidSignature', f.name), 'error'); continue; }
+
+    const entry = { id: ++pdfIdCounter, file: f, name: f.name, type: ext === 'pdf' ? 'pdf' : 'jpeg', meta: '…', thumbUrl: null };
+    pdfFiles.push(entry);
+
+    // Load metadata asynchronously
+    if (entry.type === 'jpeg') {
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        entry.meta = `${img.naturalWidth}×${img.naturalHeight}`;
+        entry.thumbUrl = url;
+        renderPdfFileList();
+      };
+      img.src = url;
+    } else {
+      // Get page count from pdf-lib
+      f.arrayBuffer().then(async buf => {
+        try {
+          const { PDFDocument } = PDFLib;
+          const doc = await PDFDocument.load(buf, { ignoreEncryption: true });
+          entry.meta = `${doc.getPageCount()} ${t('pages')}`;
+        } catch { entry.meta = '?'; }
+        renderPdfFileList();
+      });
+    }
+  }
+  onPdfFilesChanged();
+}
+
+function removePdfFile(id) {
+  const i = pdfFiles.findIndex(f => f.id === id);
+  if (i !== -1) {
+    if (pdfFiles[i].thumbUrl) URL.revokeObjectURL(pdfFiles[i].thumbUrl);
+    pdfFiles.splice(i, 1);
+  }
+  onPdfFilesChanged();
+}
+
+function onPdfFilesChanged() {
+  const has = pdfFiles.length > 0;
+  pdfFileListCard.style.display = has ? 'block' : 'none';
+  pdfMergeCard.style.display    = has ? 'block' : 'none';
+  renderPdfFileList();
+}
+
+// ── Drag-to-reorder ─────────────────────────────────
+let dragSrcId = null;
+
+function renderPdfFileList() {
+  pdfFileListEl.innerHTML = '';
+  if (!pdfFiles.length) { pdfEmptyState.style.display = 'block'; return; }
+  pdfEmptyState.style.display = 'none';
+
+  pdfFiles.forEach((entry, idx) => {
+    const item = document.createElement('div');
+    item.className = 'pdf-file-item';
+    item.setAttribute('draggable', 'true');
+    item.dataset.id = entry.id;
+
+    const thumbHtml = entry.thumbUrl
+      ? `<img class="pdf-file-thumb" src="${entry.thumbUrl}" alt="" />`
+      : `<div class="pdf-file-thumb-placeholder ${entry.type === 'jpeg' ? 'img-thumb' : ''}">${entry.type === 'pdf' ? pdfThumbIcon() : imgThumbIcon()}</div>`;
+
+    const badgeClass = entry.type === 'pdf' ? 'badge-pdf' : 'badge-img';
+    const badgeText  = entry.type === 'pdf' ? 'PDF' : 'IMG';
+
+    item.innerHTML = `
+      <div class="drag-handle" title="Drag to reorder">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </div>
+      <span class="pdf-order-num">${idx + 1}</span>
+      ${thumbHtml}
+      <div class="pdf-file-details">
+        <div class="pdf-file-name" title="${esc(entry.name)}">${esc(entry.name)}</div>
+        <div class="pdf-file-meta"><span class="pdf-type-badge ${badgeClass}">${badgeText}</span> &nbsp;${esc(entry.meta)}</div>
+      </div>
+      <div class="pdf-file-actions">
+        <button class="btn-icon danger" data-remove="${entry.id}">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
+      </div>`;
+
+    item.querySelector('[data-remove]').addEventListener('click', () => removePdfFile(entry.id));
+
+    // Drag events
+    item.addEventListener('dragstart', e => { dragSrcId = entry.id; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    item.addEventListener('dragend', () => { dragSrcId = null; document.querySelectorAll('.pdf-file-item').forEach(el => el.classList.remove('dragging','drag-over-item')); });
+    item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; item.classList.add('drag-over-item'); });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over-item'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over-item');
+      if (dragSrcId == null || dragSrcId === entry.id) return;
+      const fromIdx = pdfFiles.findIndex(f => f.id === dragSrcId);
+      const toIdx   = pdfFiles.findIndex(f => f.id === entry.id);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = pdfFiles.splice(fromIdx, 1);
+      pdfFiles.splice(toIdx, 0, moved);
+      renderPdfFileList();
+    });
+
+    pdfFileListEl.appendChild(item);
+  });
+}
+
+function pdfThumbIcon() {
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+}
+function imgThumbIcon() {
+  return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+}
+
+// ── Merge & Download ─────────────────────────────────
+pdfMergeBtn.addEventListener('click', async () => {
+  if (!pdfFiles.length) { showToast(t('errNoFiles'), 'error'); return; }
+  if (typeof PDFLib === 'undefined') { showToast('pdf-lib not loaded. Check internet connection.', 'error'); return; }
+
+  pdfMergeBtn.disabled = true;
+  pdfProgressWrap.classList.add('visible');
+  pdfProgressBar.style.width = '0%';
+
+  try {
+    const { PDFDocument } = PDFLib;
+    const merged = await PDFDocument.create();
+    const total = pdfFiles.length;
+
+    for (let i = 0; i < total; i++) {
+      const entry = pdfFiles[i];
+      pdfProgressLabel.textContent = t('pdfMerging', i + 1, total);
+      pdfProgressBar.style.width = `${Math.round(((i) / total) * 90)}%`;
+
+      const bytes = await entry.file.arrayBuffer();
+
+      if (entry.type === 'pdf') {
+        let srcDoc;
+        try {
+          srcDoc = await PDFDocument.load(bytes);
+        } catch (err) {
+          if (err.message && err.message.toLowerCase().includes('encrypt')) {
+            showToast(t('errEncryptedPdf', entry.name), 'error');
+            continue;
+          }
+          showToast(t('errBadFile', entry.name), 'error');
+          continue;
+        }
+        const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
+        pages.forEach(p => merged.addPage(p));
+      } else {
+        // JPEG image
+        let img;
+        try { img = await merged.embedJpg(bytes); }
+        catch { showToast(t('errBadFile', entry.name), 'error'); continue; }
+        const { width, height } = img.scale(1);
+        const page = merged.addPage([width, height]);
+        page.drawImage(img, { x: 0, y: 0, width, height });
+      }
+    }
+
+    pdfProgressBar.style.width = '100%';
+    const pdfBytes = await merged.save();
+    const name = (pdfFilenameInput.value.trim() || 'merged').replace(/\.pdf$/i, '') + '.pdf';
+    saveAs(new Blob([pdfBytes], { type: 'application/pdf' }), name);
+    pdfProgressLabel.textContent = t('pdfDone', total);
+    showToast(t('downloading'), 'success');
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+    pdfProgressLabel.textContent = '';
+  } finally {
+    pdfMergeBtn.disabled = false;
+    setTimeout(() => { pdfProgressWrap.classList.remove('visible'); pdfProgressBar.style.width = '0%'; }, 3000);
+  }
+});
+
+// ════════════════════════════════════════════════════════
+// FEEDBACK WIDGET
+// ════════════════════════════════════════════════════════
+const FEEDBACK_KEY = 'fileTools_feedbacks';
 let selectedStar = 0;
 
-function getFeedbacks() {
-  try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY)) || []; }
-  catch { return []; }
-}
+function getFeedbacks() { try { return JSON.parse(localStorage.getItem(FEEDBACK_KEY)) || []; } catch { return []; } }
 function saveFeedback(rating, comment) {
   const list = getFeedbacks();
   list.push({ rating, comment: comment.trim(), ts: Date.now() });
@@ -931,8 +1022,8 @@ function saveFeedback(rating, comment) {
 }
 
 function buildStars() {
-  const starRow = document.getElementById('starRow');
-  starRow.innerHTML = '';
+  const row = document.getElementById('starRow');
+  row.innerHTML = '';
   for (let i = 1; i <= 5; i++) {
     const btn = document.createElement('button');
     btn.className = 'star-btn' + (i <= selectedStar ? ' active' : '');
@@ -941,57 +1032,39 @@ function buildStars() {
     btn.textContent = '★';
     btn.addEventListener('mouseenter', () => highlightStars(i));
     btn.addEventListener('mouseleave', () => highlightStars(selectedStar));
-    btn.addEventListener('click', () => {
-      selectedStar = i;
-      highlightStars(i);
-      document.getElementById('feedbackSubmit').disabled = false;
-    });
-    starRow.appendChild(btn);
+    btn.addEventListener('click', () => { selectedStar = i; highlightStars(i); document.getElementById('feedbackSubmit').disabled = false; });
+    row.appendChild(btn);
   }
 }
-
-function highlightStars(n) {
-  document.querySelectorAll('#starRow .star-btn').forEach((btn, idx) => {
-    btn.classList.toggle('active', idx < n);
-  });
-}
-
+function highlightStars(n) { document.querySelectorAll('#starRow .star-btn').forEach((b, idx) => b.classList.toggle('active', idx < n)); }
 function renderFeedbackSummary() {
-  const list = getFeedbacks();
-  const summaryEl = document.getElementById('feedbackSummary');
-  if (!list.length) { summaryEl.textContent = ''; return; }
-  const avg = (list.reduce((s, f) => s + f.rating, 0) / list.length).toFixed(1);
-  summaryEl.textContent = t('feedbackSummary', avg, list.length);
+  const list = getFeedbacks(), el = document.getElementById('feedbackSummary');
+  if (!list.length) { el.textContent = ''; return; }
+  const avg = (list.reduce((s,f) => s + f.rating, 0) / list.length).toFixed(1);
+  el.textContent = t('feedbackSummary', avg, list.length);
 }
 
 document.getElementById('feedbackSubmit').addEventListener('click', () => {
   if (!selectedStar) return;
-  const comment = document.getElementById('feedbackComment').value;
-  saveFeedback(selectedStar, comment);
+  saveFeedback(selectedStar, document.getElementById('feedbackComment').value);
   document.getElementById('feedbackForm').style.display = 'none';
-  const thanksEl = document.getElementById('feedbackThanks');
-  thanksEl.style.display = 'block';
+  const thanks = document.getElementById('feedbackThanks');
+  thanks.style.display = 'block';
   renderFeedbackSummary();
-  // Allow re-rating after 4 s
   setTimeout(() => {
     selectedStar = 0;
     document.getElementById('feedbackComment').value = '';
     document.getElementById('feedbackSubmit').disabled = true;
     document.getElementById('feedbackForm').style.display = 'block';
-    thanksEl.style.display = 'none';
+    thanks.style.display = 'none';
     buildStars();
   }, 4000);
 });
 
-// Also update placeholder when lang changes
-function applyFeedbackLang() {
-  document.getElementById('feedbackComment').placeholder = t('feedbackPlaceholder');
-  renderFeedbackSummary();
-}
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
 buildStars();
-applyFeedbackLang();
 applyLang();
 </script>
 </body>
