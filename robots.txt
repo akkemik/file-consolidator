@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://akkemik.github.io/file-consolidator/sitemap.xml
+Sitemap: https://fileconsolidator.apptechno.net/sitemap.xml
