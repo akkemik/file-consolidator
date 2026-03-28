@@ -1,0 +1,15 @@
+# ads.txt — cache bypass so AdSense crawler always gets fresh content
+/ads.txt
+  Cache-Control: no-store, no-cache, must-revalidate
+  Content-Type: text/plain; charset=utf-8
+
+# robots.txt — same
+/robots.txt
+  Cache-Control: no-store, no-cache, must-revalidate
+  Content-Type: text/plain; charset=utf-8
+
+# Security headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
