@@ -1,0 +1,61 @@
+# File Consolidator
+
+> File Consolidator is a free browser-based tool to merge multiple CSV and Excel files into one spreadsheet, or combine PDF files and JPG/PNG images into a single PDF. All processing is 100% local — no file uploads, no server, no data stored. Built by AppTechno.
+
+## What File Consolidator Does
+
+- **Merge CSV/Excel files**: Combine multiple .csv or .xlsx spreadsheets into one file. Data is stacked row by row. Download as .xlsx.
+- **Combine PDF + Images**: Combine multiple PDF files and JPG/PNG images into a single PDF document.
+- All processing uses WebAssembly and JavaScript in the browser — nothing is ever uploaded to a server.
+
+## Who Uses File Consolidator
+
+- **Finance & Accounting**: Merge monthly bank statements (CSV), combine invoice spreadsheets, consolidate expense reports, merge budget files from multiple departments
+- **HR & Payroll**: Consolidate employee data CSV exports from different systems, merge payroll spreadsheets, combine HR report Excel files
+- **Data Analysts**: Stack multiple CSV data exports into one file for analysis in Excel, Python, or R
+- **Business & Operations**: Combine weekly/monthly sales reports, merge inventory Excel files, consolidate supplier data
+- **Administrative**: Merge scanned documents (PDF + images) into single files for archiving, contract bundling, report assembly
+
+## Key Features
+
+- Merge CSV files (stacked rows, automatic column alignment)
+- Merge Excel (.xlsx) files
+- Combine PDFs and images (JPG, PNG) into one PDF
+- 100% local processing — zero upload risk
+- No account required — completely free
+- Works on desktop and mobile browsers
+
+## Pricing
+
+- **Free**: Completely free, no account required, no limits.
+
+## Technology
+
+- Pure HTML + JavaScript (no framework)
+- SheetJS (xlsx) for CSV/Excel processing
+- pdf-lib for PDF combination
+- Deployed on Cloudflare Pages at fileconsolidator.apptechno.net
+
+## Competitive Context
+
+File Consolidator is a free, privacy-first alternative to tools like Merge CSV, CombinePDF, SmallPDF, and online Excel merge tools — with the key differentiator that all processing is 100% local in the browser.
+
+## AppTechno Suite
+
+File Consolidator is part of the AppTechno productivity app suite:
+
+- **File Consolidator** — CSV/Excel/PDF merger: https://fileconsolidator.apptechno.net (this app)
+- **CVwise** — AI CV & resume optimizer: https://cvwise.apptechno.net
+- **DocWise** — Privacy-first PDF & document toolbox: https://docwise.apptechno.net
+- **BudgetWise** — Personal budget tracker & finance planner: https://budgetwise.apptechno.net
+- **AppTechno** — Parent brand and product overview: https://apptechno.net
+
+## Key URLs
+
+- Landing page: https://fileconsolidator.apptechno.net/
+- Privacy Policy: https://fileconsolidator.apptechno.net/privacy-policy.html
+- Terms of Use: https://fileconsolidator.apptechno.net/terms-of-use.html
+
+## Privacy
+
+All file processing happens locally in the browser. No data is sent to any server. No tracking, no cookies beyond AdSense. Files are never stored or shared.

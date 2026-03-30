@@ -28,19 +28,80 @@
   <meta name="twitter:title" content="File Consolidation Tool — Merge CSV, Excel &amp; PDF Online" />
   <meta name="twitter:description" content="Free online tool to merge CSV/Excel files or combine PDFs. All processing happens locally in your browser — nothing is uploaded or stored." />
 
-  <!-- Structured Data (WebApplication) -->
+  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "File Consolidation Tool",
-    "url": "https://fileconsolidator.apptechno.net/",
-    "description": "Free online tool to merge multiple CSV and Excel files into one spreadsheet, or combine PDF files and JPG images into a single PDF. All processing is 100% local in the browser.",
-    "applicationCategory": "UtilitiesApplication",
-    "operatingSystem": "Any",
-    "browserRequirements": "Requires JavaScript",
-    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-    "author": { "@type": "Organization", "name": "AppTechno", "url": "https://apptechno.net" }
+    "@graph": [
+      {
+        "@type": "SoftwareApplication",
+        "name": "File Consolidator",
+        "url": "https://fileconsolidator.apptechno.net/",
+        "description": "Free browser-based tool to merge multiple CSV and Excel files into one spreadsheet, or combine PDFs and images into a single PDF. 100% local processing — no uploads, no server.",
+        "applicationCategory": "UtilitiesApplication",
+        "applicationSubCategory": "FileManagement",
+        "operatingSystem": "Web",
+        "browserRequirements": "Requires JavaScript",
+        "keywords": "csv merge, excel consolidate, pdf merge, combine spreadsheets, finance report merge, HR data merge, data analyst tool, privacy file merger",
+        "featureList": [
+          "Merge multiple CSV files into one spreadsheet",
+          "Merge multiple Excel (.xlsx) files into one",
+          "Combine PDFs and JPG/PNG images into a single PDF",
+          "100% local browser processing — no file uploads",
+          "No account required — completely free"
+        ],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free — no account required" },
+        "author": { "@type": "Organization", "name": "AppTechno", "url": "https://apptechno.net" }
+      },
+      {
+        "@type": "Organization",
+        "name": "AppTechno",
+        "url": "https://apptechno.net",
+        "sameAs": [
+          "https://fileconsolidator.apptechno.net",
+          "https://cvwise.apptechno.net",
+          "https://docwise.apptechno.net",
+          "https://budgetwise.apptechno.net"
+        ],
+        "description": "AppTechno builds privacy-first and AI-powered productivity tools: File Consolidator, CVwise, DocWise, and BudgetWise."
+      },
+      {
+        "@type": "HowTo",
+        "name": "How to Merge CSV Files with File Consolidator",
+        "description": "Combine multiple CSV or Excel files into one spreadsheet in 3 steps — no upload, no account.",
+        "totalTime": "PT1M",
+        "step": [
+          { "@type": "HowToStep", "position": 1, "name": "Select CSV/Excel tab", "text": "Click the 'CSV / Excel' tab on the File Consolidator page." },
+          { "@type": "HowToStep", "position": 2, "name": "Add your files", "text": "Drag and drop or click to select multiple .csv or .xlsx files." },
+          { "@type": "HowToStep", "position": 3, "name": "Download merged file", "text": "Click Merge — your combined spreadsheet is created locally and downloaded instantly. Nothing is uploaded." }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does File Consolidator upload my files?",
+            "acceptedAnswer": { "@type": "Answer", "text": "No. All processing happens entirely in your browser using JavaScript and WebAssembly. Your files are never sent to any server — they never leave your device." }
+          },
+          {
+            "@type": "Question",
+            "name": "What file formats does File Consolidator support?",
+            "acceptedAnswer": { "@type": "Answer", "text": "File Consolidator supports CSV (.csv), Excel (.xlsx) for spreadsheet merging, and PDF, JPG, PNG for PDF combining." }
+          },
+          {
+            "@type": "Question",
+            "name": "Is File Consolidator free?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Yes, completely free. No account required, no usage limits, no hidden fees." }
+          },
+          {
+            "@type": "Question",
+            "name": "Who is File Consolidator useful for?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Finance teams merging bank statements or expense reports, HR teams consolidating employee data CSV exports, data analysts stacking CSV exports, and anyone needing to combine spreadsheets or PDF documents without uploading to a cloud service." }
+          }
+        ]
+      }
+    ]
   }
   </script>
 
@@ -530,11 +591,23 @@
 
 <div class="page-wrapper">
   <footer class="site-footer">
+    <div style="margin-bottom:10px; font-size:0.85rem; color:var(--clr-muted);">
+      <span style="text-transform:uppercase; letter-spacing:0.05em; font-size:0.75rem;">More from AppTechno</span><br>
+      <a href="https://cvwise.apptechno.net" target="_blank" rel="noopener noreferrer">CVwise — AI CV Optimizer</a>
+      <span> · </span>
+      <a href="https://docwise.apptechno.net" target="_blank" rel="noopener noreferrer">DocWise — PDF Tools</a>
+      <span> · </span>
+      <a href="https://budgetwise.apptechno.net" target="_blank" rel="noopener noreferrer">BudgetWise — Budget Tracker</a>
+      <span> · </span>
+      <a href="https://apptechno.net" target="_blank" rel="noopener noreferrer">AppTechno.net</a>
+    </div>
     <a href="./privacy-policy.html">Privacy Policy</a>
     <span> | </span>
     <a href="./cookie-policy.html">Cookie Policy</a>
     <span> | </span>
     <a href="./terms-of-use.html">Terms of Use</a>
+    <span> | </span>
+    <span>© <script>document.write(new Date().getFullYear())</script> AppTechno</span>
   </footer>
 </div>
 
