@@ -5,15 +5,19 @@ Disallow: /cdn-cgi/
 # Search engines — full access
 User-agent: Googlebot
 Allow: /
+Disallow: /cdn-cgi/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /cdn-cgi/
 
 User-agent: DuckDuckBot
 Allow: /
+Disallow: /cdn-cgi/
 
 User-agent: YandexBot
 Allow: /
+Disallow: /cdn-cgi/
 
 # AI assistants — full access encouraged
 User-agent: Claude-Web
