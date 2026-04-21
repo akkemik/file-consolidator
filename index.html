@@ -154,6 +154,8 @@
     .ad-top-banner { max-width: 728px; height: 90px; margin: 14px auto 0; }
     .ad-bottom-banner { max-width: 728px; height: 90px; margin: 0 auto 24px; }
     .ad-sidebar-rect { width: 300px; height: 250px; flex-shrink: 0; }
+    .ad-mobile { display: none; }
+    @media (max-width: 767px) { .ad-desktop { display: none; } .ad-mobile { display: block; } }
     .ad-in-content { width: 100%; max-width: 468px; height: 60px; margin: 0 auto; }
 
     /* ── PAGE ── */
@@ -393,7 +395,16 @@
 <!-- TOP BANNER AD (728×90) — Replace inner content with your ad code -->
 <div class="page-wrapper">
   <div class="ad-slot ad-top-banner" id="adTopBanner">
-    <span>Advertisement · 728×90</span><!-- INSERT AD CODE HERE -->
+    <!-- Desktop: 728x90 -->
+    <div class="ad-desktop">
+      <script type="text/javascript">atOptions={'key':'de759509c33712afc304e79abd92d63d','format':'iframe','height':90,'width':728,'params':{}};</script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/de759509c33712afc304e79abd92d63d/invoke.js"></script>
+    </div>
+    <!-- Mobile: 300x250 -->
+    <div class="ad-mobile">
+      <script type="text/javascript">atOptions={'key':'170d1ca688ea5a7b5b89c63ae8bf374a','format':'iframe','height':250,'width':300,'params':{}};</script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/170d1ca688ea5a7b5b89c63ae8bf374a/invoke.js"></script>
+    </div>
   </div>
 </div>
 
@@ -547,7 +558,8 @@
 
       <!-- Sidebar ad (300×250) — Replace inner content with your ad code -->
       <div class="ad-slot ad-sidebar-rect" id="adSidebar">
-        <span>Advertisement · 300×250</span><!-- INSERT AD CODE HERE -->
+        <script type="text/javascript">atOptions={'key':'170d1ca688ea5a7b5b89c63ae8bf374a','format':'iframe','height':250,'width':300,'params':{}};</script>
+        <script type="text/javascript" src="//www.highperformanceformat.com/170d1ca688ea5a7b5b89c63ae8bf374a/invoke.js"></script>
       </div>
 
       <!-- Tips -->
@@ -582,7 +594,14 @@
 <!-- BOTTOM BANNER AD (728×90) — Replace inner content with your ad code -->
 <div class="page-wrapper">
   <div class="ad-slot ad-bottom-banner" id="adBottomBanner">
-    <span>Advertisement · 728×90</span><!-- INSERT AD CODE HERE -->
+    <div class="ad-desktop">
+      <script type="text/javascript">atOptions={'key':'de759509c33712afc304e79abd92d63d','format':'iframe','height':90,'width':728,'params':{}};</script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/de759509c33712afc304e79abd92d63d/invoke.js"></script>
+    </div>
+    <div class="ad-mobile">
+      <script type="text/javascript">atOptions={'key':'170d1ca688ea5a7b5b89c63ae8bf374a','format':'iframe','height':250,'width':300,'params':{}};</script>
+      <script type="text/javascript" src="//www.highperformanceformat.com/170d1ca688ea5a7b5b89c63ae8bf374a/invoke.js"></script>
+    </div>
   </div>
 </div>
 
@@ -1954,5 +1973,10 @@ buildStars();
 applyLang();
 renderFeedbackList();
 </script>
+<!-- Adsterra Native Banner -->
+<div style="max-width:900px;margin:0 auto;padding:16px 20px;">
+  <script async="async" data-cfasync="false" src="https://pl29213253.profitablecpmratenetwork.com/f08b4cf5948921128fb61f52e8a9ec9d/invoke.js"></script>
+  <div id="container-f08b4cf5948921128fb61f52e8a9ec9d"></div>
+</div>
 </body>
 </html>
